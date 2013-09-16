@@ -8,10 +8,28 @@
   <name>Huygens security framework for Jersey</name>
   <description>Contains all the classes that have something to do with securing a Jersey rest service.</description>
   
+  <distributionManagement>
+    <repository>
+      <id>maven.huygens</id>
+      <name>Huygens Maven Repository</name>
+      <url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
+    </repository>
+    <!-- use the following if you ARE using a snapshot version. -->
+    <snapshotRepository>
+      <id>maven.huygens</id>
+      <name>Huygens Maven Repository</name>
+      <url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
+      <uniqueVersion>false</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement>
+  
   <properties>
     <junit.version>4.11</junit.version>
     <maven-compiler.version>3.1</maven-compiler.version>
+    <maven-javadoc.version>2.9</maven-javadoc.version>
+    <maven-source.version>2.2.1</maven-source.version>
     <mockito.version>1.9.5</mockito.version>
+    <wagon-ssh.version>2.2</wagon-ssh.version>
   </properties>
   
   <dependencies>
@@ -80,6 +98,39 @@
           <target>1.6</target>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>${maven-source.version}</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${maven-javadoc.version}</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh</artifactId>
+        <version>${wagon-ssh.version}</version>
+      </extension>
+    </extensions>
   </build>
 </project>
