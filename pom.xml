@@ -4,7 +4,7 @@
 
     <groupId>nl.knaw.huygens</groupId>
     <artifactId>huygens-security</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>Huygens security framework for Jersey</name>
     <description>Contains all the classes that have something to do with securing a Jersey rest service.</description>
 
@@ -24,6 +24,8 @@
     </distributionManagement>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jdk.version>1.6</jdk.version>
         <junit.version>4.11</junit.version>
         <maven-compiler.version>3.1</maven-compiler.version>
         <maven-javadoc.version>2.9</maven-javadoc.version>
@@ -94,8 +96,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler.version}</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
                 </configuration>
             </plugin>
             <plugin>
