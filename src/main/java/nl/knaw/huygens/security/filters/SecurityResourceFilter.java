@@ -1,4 +1,4 @@
-package nl.knaw.huygens.security;
+package nl.knaw.huygens.security.filters;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
@@ -8,6 +8,10 @@ import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
 import com.sun.jersey.spi.container.ContainerResponseFilter;
 import com.sun.jersey.spi.container.ResourceFilter;
+import nl.knaw.huygens.security.AuthorizationHandler;
+import nl.knaw.huygens.security.SecurityContextCreator;
+import nl.knaw.huygens.security.SecurityInformation;
+import nl.knaw.huygens.security.UnauthorizedException;
 
 /**
  * The SecurityResourceFilter uses an AuthorizationHandler to get the mandatory information to create a SecurityContext.
