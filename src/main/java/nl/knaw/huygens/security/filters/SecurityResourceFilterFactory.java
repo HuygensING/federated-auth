@@ -1,8 +1,11 @@
-package nl.knaw.huygens.security;
+package nl.knaw.huygens.security.filters;
 
 import com.google.inject.Inject;
 import com.sun.jersey.api.model.AbstractMethod;
 import com.sun.jersey.spi.container.ResourceFilter;
+import nl.knaw.huygens.security.AbstractRolesAllowedResourceFilterFactory;
+import nl.knaw.huygens.security.AuthorizationHandler;
+import nl.knaw.huygens.security.SecurityContextCreator;
 
 public class SecurityResourceFilterFactory extends AbstractRolesAllowedResourceFilterFactory {
   private final SecurityContextCreator securityContextCreator;

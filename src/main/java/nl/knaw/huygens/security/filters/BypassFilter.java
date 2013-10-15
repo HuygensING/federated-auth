@@ -1,8 +1,7 @@
-package nl.knaw.huygens.security;
-
-import java.security.Principal;
+package nl.knaw.huygens.security.filters;
 
 import javax.ws.rs.core.SecurityContext;
+import java.security.Principal;
 
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
