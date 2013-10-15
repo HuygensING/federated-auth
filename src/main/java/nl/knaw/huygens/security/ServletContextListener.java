@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class ServletContextListener extends GuiceServletContextListener {
     /**
-     * Base package to scan for root resource and provider classes
+     * Base package to (recursively) scan for root resource and provider classes
      */
     public static final String BASE_PACKAGE = "nl.huygens.knaw.security";
 
