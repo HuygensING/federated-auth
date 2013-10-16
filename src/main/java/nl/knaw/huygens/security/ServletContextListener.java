@@ -8,6 +8,7 @@ import static com.sun.jersey.api.core.ResourceConfig.PROPERTY_RESOURCE_FILTER_FA
 import static com.sun.jersey.api.json.JSONConfiguration.FEATURE_POJO_MAPPING;
 
 import javax.servlet.ServletContextEvent;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import com.google.common.base.Joiner;
@@ -22,6 +23,13 @@ import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import nl.knaw.huygens.security.filters.CharsetResponseFilter;
 import nl.knaw.huygens.security.filters.SecurityFilter;
 import nl.knaw.huygens.security.util.ClassNameIterator;
+import org.opensaml.Configuration;
+import org.opensaml.DefaultBootstrap;
+import org.opensaml.common.SAMLObjectBuilder;
+import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
+import org.opensaml.saml2.core.Assertion;
+import org.opensaml.xml.ConfigurationException;
+import org.opensaml.xml.XMLObjectBuilderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +37,7 @@ public class ServletContextListener extends GuiceServletContextListener {
     /**
      * Base package to (recursively) scan for root resource and provider classes
      */
-    public static final String BASE_PACKAGE = "nl.huygens.knaw.security";
+    public static final String BASE_PACKAGE = "nl.knaw.huygens.security";
 
     private static final Logger log = LoggerFactory.getLogger(ServletContextListener.class);
 
@@ -65,6 +73,26 @@ public class ServletContextListener extends GuiceServletContextListener {
         params.put(PROPERTY_CONTAINER_REQUEST_FILTERS, getRequestFilters());
         params.put(PROPERTY_CONTAINER_RESPONSE_FILTERS, getResponseFilters());
         params.put(PROPERTY_RESOURCE_FILTER_FACTORIES, getFilterFactories());
+
+        try {
+            log.info("Bootstrapping OpenSAML library");
+            DefaultBootstrap.bootstrap();
+        } catch (ConfigurationException e) {
+            log.error("Unable to bootstrap OpenSAML library");
+        }
+
+        try {
+            log.info("Initializing secure random identifier generator");
+            final SecureRandomIdentifierGenerator generator = new SecureRandomIdentifierGenerator();
+        } catch (NoSuchAlgorithmException e) {
+            log.error("No algorithm for secure random identifier generator: {}", e.getMessage());
+        }
+
+        XMLObjectBuilderFactory builderFactory = Configuration.getBuilderFactory();
+        SAMLObjectBuilder<Assertion> builder = (SAMLObjectBuilder<Assertion>) builderFactory
+                .getBuilder(Assertion.DEFAULT_ELEMENT_NAME);
+
+        Assertion assertion = builder.buildObject();
 
         return Guice.createInjector(new JerseyServletModule() {
             @Override
