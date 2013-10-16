@@ -13,6 +13,7 @@ import java.util.Map;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
+import com.google.common.io.BaseEncoding;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
@@ -23,13 +24,9 @@ import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import nl.knaw.huygens.security.filters.CharsetResponseFilter;
 import nl.knaw.huygens.security.filters.SecurityFilter;
 import nl.knaw.huygens.security.util.ClassNameIterator;
-import org.opensaml.Configuration;
 import org.opensaml.DefaultBootstrap;
-import org.opensaml.common.SAMLObjectBuilder;
 import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
-import org.opensaml.saml2.core.Assertion;
 import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.XMLObjectBuilderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +39,8 @@ public class ServletContextListener extends GuiceServletContextListener {
     private static final Logger log = LoggerFactory.getLogger(ServletContextListener.class);
 
     private static final Joiner COMMA_JOINER = Joiner.on(',');
+
+    public static final BaseEncoding BASE_64 = BaseEncoding.base64();
 
     private static String getClassNames(Class<?>... classes) {
         return COMMA_JOINER.join(new ClassNameIterator(classes));
@@ -87,12 +86,6 @@ public class ServletContextListener extends GuiceServletContextListener {
         } catch (NoSuchAlgorithmException e) {
             log.error("No algorithm for secure random identifier generator: {}", e.getMessage());
         }
-
-        XMLObjectBuilderFactory builderFactory = Configuration.getBuilderFactory();
-        SAMLObjectBuilder<Assertion> builder = (SAMLObjectBuilder<Assertion>) builderFactory
-                .getBuilder(Assertion.DEFAULT_ELEMENT_NAME);
-
-        Assertion assertion = builder.buildObject();
 
         return Guice.createInjector(new JerseyServletModule() {
             @Override
