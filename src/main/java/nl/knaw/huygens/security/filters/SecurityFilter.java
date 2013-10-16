@@ -3,7 +3,6 @@ import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
 
 public class SecurityFilter implements ContainerRequestFilter {
-
     private static final String AUTH_HEADER = "Authorization";
 
     @Override

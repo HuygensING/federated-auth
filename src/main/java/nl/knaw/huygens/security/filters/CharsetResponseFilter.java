@@ -29,7 +29,6 @@ public class CharsetResponseFilter implements ContainerResponseFilter {
 
         final String type = mediaType.toString();
         if (!type.contains(CHARSET_KEY)) {
-            log.warn("Unspecified Charset, defaulting to: {}", UTF_8);
             response.getHttpHeaders().putSingle(CONTENT_TYPE, type + CHARSET_UTF8_PARAM);
         }
 
