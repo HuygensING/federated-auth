@@ -95,9 +95,10 @@
                 <artifactId>tomcat6-maven-plugin</artifactId>
                 <version>2.1</version>
                 <configuration>
-                    <url>http://localhost:8080/manager</url>
-                    <server>dev-tomcat</server>
-                    <path>/rest</path>
+                    <url>http://demo7.huygens.knaw.nl/manager</url>
+                    <!--<url>http://localhost:8080/manager</url>=-->
+                    <server>test-tomcat</server>
+                    <path>/secure</path>
                 </configuration>
             </plugin>
         </plugins>

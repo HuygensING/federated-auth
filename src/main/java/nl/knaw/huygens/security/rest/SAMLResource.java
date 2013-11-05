@@ -1,7 +1,5 @@
 package nl.knaw.huygens.security.rest;
 
-import static com.google.common.base.Charsets.UTF_8;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -13,19 +11,23 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
-import java.io.ByteArrayOutputStream;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.UUID;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterOutputStream;
 
 import com.google.common.base.Strings;
 import nl.knaw.huygens.security.saml2.SAMLEncoder;
 import org.joda.time.DateTime;
+import org.opensaml.Configuration;
 import org.opensaml.common.SAMLVersion;
 import org.opensaml.common.xml.SAMLConstants;
+import org.opensaml.saml2.core.Assertion;
+import org.opensaml.saml2.core.Attribute;
+import org.opensaml.saml2.core.AttributeStatement;
 import org.opensaml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml2.core.AuthnContextComparisonTypeEnumeration;
 import org.opensaml.saml2.core.AuthnRequest;
@@ -39,16 +41,23 @@ import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
 import org.opensaml.saml2.core.impl.RequestedAuthnContextBuilder;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.ws.transport.http.HTTPTransportUtils;
+import org.opensaml.xml.XMLObject;
+import org.opensaml.xml.io.Unmarshaller;
+import org.opensaml.xml.io.UnmarshallerFactory;
+import org.opensaml.xml.io.UnmarshallingException;
+import org.opensaml.xml.schema.XSAny;
 import org.opensaml.xml.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 @Path("/saml2")
 public class SAMLResource {
     public static final String IDP = "https://engine.surfconext.nl/authentication/idp/single-sign-on";
-//            = "https://idp.diy.surfconext.nl/simplesaml/module.php/core/authenticate.php?as=example-userpass";
 
-    public static final String CONSUMER = "http://demo17.huygens.knaw.nl/apis-authorization-server/oauth2/authorize";
+    private static final String CONSUMER = "http://demo17.huygens.knaw.nl/apis-authorization-server/oauth2/authorize";
 
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
@@ -97,21 +106,47 @@ public class SAMLResource {
             // let's allow this for now, until we actually need to relate information back to the original request.
         }
 
+        String samlResponse = new String(Base64.decode(base64SamlResponse));
+        log.debug("decoded samlReponse: {}", samlResponse);
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
         try {
-            Inflater inflater = new Inflater(true); // Use RFC 1951 compliant inflater
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            InflaterOutputStream ios = new InflaterOutputStream(baos, inflater);
-            ios.write(Base64.decode(base64SamlResponse));
-            ios.close();
-            final String response = new String(baos.toByteArray());
-            log.debug("decoded response: {}", response);
-        } catch (UnsupportedEncodingException e) {
-            log.warn("Unsupported encoding: {}", UTF_8);
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(new ByteArrayInputStream(samlResponse.getBytes()));
+            Element root = doc.getDocumentElement();
+            UnmarshallerFactory uf = Configuration.getUnmarshallerFactory();
+            Unmarshaller unmarshaller = uf.getUnmarshaller(root);
+            XMLObject responseXmlObj = unmarshaller.unmarshall(root);
+            org.opensaml.saml2.core.Response resp = (org.opensaml.saml2.core.Response) responseXmlObj;
+            Assertion assertion = resp.getAssertions().get(0);
+            String subject = assertion.getSubject().getNameID().getValue();
+            log.debug("subject: {}", subject);
+            String issuer = assertion.getIssuer().getValue();
+            log.debug("issuer: {}", issuer);
+            for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
+                for (Attribute attribute : attributeStatement.getAttributes()) {
+                    log.debug("attribute.name: {}", attribute.getName());
+                    for (XMLObject xmlObject : attribute.getAttributeValues()) {
+                        log.debug("- attribute.value: {}", ((XSAny)xmlObject).getTextContent());
+                    }
+                }
+            }
+            String statusCode = resp.getStatus().getStatusCode().getValue();
+            log.debug("statusCode: {}", statusCode);
+        } catch (ParserConfigurationException e) {
+            log.warn("ParserConfigurationException: {}", e.getMessage());
+        } catch (SAXException e) {
+            log.warn("SAXException: {}", e.getMessage());
         } catch (IOException e) {
             log.warn("IOException: {}", e.getMessage());
+        } catch (UnmarshallingException e) {
+            log.warn("UnmarshallingException: {}", e.getMessage());
         }
+
+
         // todo: retrieve original URI based on relayState
-        return Response.seeOther(URI.create("/redirect")).build();
+        return Response.seeOther(URI.create("/hello")).build();
     }
 
     /**
@@ -159,7 +194,7 @@ public class SAMLResource {
         authnRequest.setDestination("https://engine.surfconext.nl/authentication/idp/single-sign-on");
         authnRequest.setIssueInstant(new DateTime()); // aka "now"
         authnRequest.setProtocolBinding(SAMLConstants.SAML2_POST_BINDING_URI);
-        authnRequest.setAssertionConsumerServiceURL(CONSUMER);
+//        authnRequest.setAssertionConsumerServiceURL(CONSUMER);
         authnRequest.setIssuer(issuer);
         authnRequest.setNameIDPolicy(nameIDPolicy);
         authnRequest.setRequestedAuthnContext(requestedAuthnContext);
