@@ -15,8 +15,20 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.UUID;
 
 import com.google.common.base.Strings;
@@ -39,6 +51,7 @@ import org.opensaml.saml2.core.impl.AuthnRequestBuilder;
 import org.opensaml.saml2.core.impl.IssuerBuilder;
 import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
 import org.opensaml.saml2.core.impl.RequestedAuthnContextBuilder;
+import org.opensaml.security.SAMLSignatureProfileValidator;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.ws.transport.http.HTTPTransportUtils;
 import org.opensaml.xml.XMLObject;
@@ -46,7 +59,11 @@ import org.opensaml.xml.io.Unmarshaller;
 import org.opensaml.xml.io.UnmarshallerFactory;
 import org.opensaml.xml.io.UnmarshallingException;
 import org.opensaml.xml.schema.XSAny;
+import org.opensaml.xml.security.x509.BasicX509Credential;
+import org.opensaml.xml.signature.Signature;
+import org.opensaml.xml.signature.SignatureValidator;
 import org.opensaml.xml.util.Base64;
+import org.opensaml.xml.validation.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -64,7 +81,7 @@ public class SAMLResource {
     private static final SAMLEncoder SAML_ENCODER = new SAMLEncoder();
 
     @GET
-    @Path("/auth")
+    @Path("/login")
     @Produces(MediaType.TEXT_HTML)
     public Response getAuthenticationRequest() throws MessageEncodingException {
         final AuthnRequest message = buildAuthnRequestObject();
@@ -93,6 +110,7 @@ public class SAMLResource {
     public Response assertionConsumerService(@FormParam("SAMLResponse") String base64SamlResponse,
                                              @FormParam("RelayState") String relayState) {
         log.debug("assertionConsumerService: RelayState={}, SAMLResponse={}", relayState, base64SamlResponse);
+        String displayName = "";
 
         if (Strings.isNullOrEmpty(base64SamlResponse)) {
             log.warn("Bad request: invalid SAMLResponse parameter");
@@ -111,6 +129,7 @@ public class SAMLResource {
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
+
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(new ByteArrayInputStream(samlResponse.getBytes()));
@@ -119,19 +138,30 @@ public class SAMLResource {
             Unmarshaller unmarshaller = uf.getUnmarshaller(root);
             XMLObject responseXmlObj = unmarshaller.unmarshall(root);
             org.opensaml.saml2.core.Response resp = (org.opensaml.saml2.core.Response) responseXmlObj;
+
             Assertion assertion = resp.getAssertions().get(0);
+            verify(assertion.getSignature());
+
             String subject = assertion.getSubject().getNameID().getValue();
             log.debug("subject: {}", subject);
+
             String issuer = assertion.getIssuer().getValue();
             log.debug("issuer: {}", issuer);
+
             for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
                 for (Attribute attribute : attributeStatement.getAttributes()) {
-                    log.debug("attribute.name: {}", attribute.getName());
+                    final String name = attribute.getName();
+                    log.debug("attribute.name: {}", name);
                     for (XMLObject xmlObject : attribute.getAttributeValues()) {
-                        log.debug("- attribute.value: {}", ((XSAny)xmlObject).getTextContent());
+                        final String text = ((XSAny) xmlObject).getTextContent();
+                        log.debug("- attribute.value: {}", text);
+                        if (name.endsWith("displayName")) {
+                            displayName = text;
+                        }
                     }
                 }
             }
+
             String statusCode = resp.getStatus().getStatusCode().getValue();
             log.debug("statusCode: {}", statusCode);
         } catch (ParserConfigurationException e) {
@@ -146,7 +176,54 @@ public class SAMLResource {
 
 
         // todo: retrieve original URI based on relayState
-        return Response.seeOther(URI.create("/hello")).build();
+//        return Response.seeOther(URI.create("/hello")).build();
+        return Response.ok("Welcome: " + displayName).build();
+    }
+
+    private void verify(Signature signature) {
+        log.debug("Verifying signature: {}", signature);
+
+        try {
+            new SAMLSignatureProfileValidator().validate(signature);
+            log.debug("Valid signature profile");
+
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            X509Certificate certificate = (X509Certificate) certificateFactory
+                    .generateCertificate(new FileInputStream(getCertFile()));
+            PublicKey x509PublicKey = certificate.getPublicKey();
+            log.debug("x509PublicKey.algorithm: {}", x509PublicKey.getAlgorithm());
+            log.debug("x509PublicKey.format: {}", x509PublicKey.getFormat());
+
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(x509PublicKey.getEncoded());
+            KeyFactory keyFactory = KeyFactory.getInstance(x509PublicKey.getAlgorithm());
+            PublicKey publicKey = keyFactory.generatePublic(keySpec);
+
+            BasicX509Credential cred = new BasicX509Credential();
+            cred.setPublicKey(publicKey);
+
+            SignatureValidator signatureValidator = new SignatureValidator(cred);
+            signatureValidator.validate(signature);
+            log.debug("Valid signature");
+        } catch (ValidationException e) {
+            log.warn("Signature Validation Exception: {}", e.getMessage());
+        } catch (CertificateException e) {
+            log.warn("CertificateException: {}", e.getMessage());
+        } catch (URISyntaxException e) {
+            log.warn("URISyntaxException: {}", e.getMessage());
+        } catch (FileNotFoundException e) {
+            log.warn("Certificate file not found: {}", e.getMessage());
+        } catch (NoSuchAlgorithmException e) {
+            log.debug("No RSA KeyFactory instance to be found: {}", e.getMessage());
+        } catch (InvalidKeySpecException e) {
+            log.debug("Invalid Key Spec: {}", e.getMessage());
+        }
+    }
+
+    private File getCertFile() throws URISyntaxException {
+        final ClassLoader classLoader = getClass().getClassLoader();
+        final URL resource = classLoader.getResource("/certificates/surfconext.cert");
+        log.debug("getCertFile: resource={}", resource);
+        return new File(resource.toURI());
     }
 
     /**
