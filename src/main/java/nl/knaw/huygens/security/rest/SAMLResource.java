@@ -44,6 +44,7 @@ import org.opensaml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml2.core.AuthnContextComparisonTypeEnumeration;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Issuer;
+import org.opensaml.saml2.core.NameID;
 import org.opensaml.saml2.core.NameIDPolicy;
 import org.opensaml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml2.core.impl.AuthnContextClassRefBuilder;
@@ -110,7 +111,6 @@ public class SAMLResource {
     public Response assertionConsumerService(@FormParam("SAMLResponse") String base64SamlResponse,
                                              @FormParam("RelayState") String relayState) {
         log.debug("assertionConsumerService: RelayState={}, SAMLResponse={}", relayState, base64SamlResponse);
-        String displayName = "";
 
         if (Strings.isNullOrEmpty(base64SamlResponse)) {
             log.warn("Bad request: invalid SAMLResponse parameter");
@@ -130,6 +130,7 @@ public class SAMLResource {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
 
+        StringBuilder attrs = new StringBuilder();
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(new ByteArrayInputStream(samlResponse.getBytes()));
@@ -153,10 +154,21 @@ public class SAMLResource {
                     final String name = attribute.getName();
                     log.debug("attribute.name: {}", name);
                     for (XMLObject xmlObject : attribute.getAttributeValues()) {
-                        final String text = ((XSAny) xmlObject).getTextContent();
-                        log.debug("- attribute.value: {}", text);
-                        if (name.endsWith("displayName")) {
-                            displayName = text;
+                        final XSAny xsAny = (XSAny) xmlObject;
+                        final String text = xsAny.getTextContent();
+                        log.debug("+- attribute.value: {} (hasChildren: {})", text, xsAny.hasChildren());
+                        for (XMLObject child : xsAny.getOrderedChildren()) {
+                            log.debug("   +- child: {}", child);
+                            NameID nameID = (NameID) child;
+                            log.debug("   +- nameID.format: {}", nameID.getFormat());
+                            log.debug("   +- nameID.value: {}", nameID.getValue());
+                        }
+
+                        if ("urn:mace:dir:attribute-def:mail".equals(name)) {
+                            attrs.append("mail: [").append(text).append("]\n");
+                        }
+                        else if ("urn:mace:dir:attribute-def:displayName".equals(name)) {
+                            attrs.append("displayName: [").append(text).append("]\n");
                         }
                     }
                 }
@@ -176,8 +188,7 @@ public class SAMLResource {
 
 
         // todo: retrieve original URI based on relayState
-//        return Response.seeOther(URI.create("/hello")).build();
-        return Response.ok("Welcome: " + displayName).build();
+        return Response.ok("Welcome!\n\n" + attrs.toString()).build();
     }
 
     private void verify(Signature signature) {
@@ -274,7 +285,7 @@ public class SAMLResource {
 //        authnRequest.setAssertionConsumerServiceURL(CONSUMER);
         authnRequest.setIssuer(issuer);
         authnRequest.setNameIDPolicy(nameIDPolicy);
-        authnRequest.setRequestedAuthnContext(requestedAuthnContext);
+//        authnRequest.setRequestedAuthnContext(requestedAuthnContext);
         authnRequest.setID(UUID.randomUUID().toString());
         authnRequest.setVersion(SAMLVersion.VERSION_20);
 
