@@ -22,7 +22,7 @@ import org.w3c.dom.Element;
 public class SAMLEncoder {
     private static final Logger log = LoggerFactory.getLogger(SAMLEncoder.class);
 
-    public String deflateAndBase64Encode(SAMLObject message) throws MessageEncodingException {
+    public static String deflateAndBase64Encode(SAMLObject message) throws MessageEncodingException {
         log.debug("Deflating and Base64 encoding SAML message");
         String messageStr = XMLHelper.nodeToString(marshallMessage(message));
 
@@ -40,7 +40,7 @@ public class SAMLEncoder {
         return Base64.encodeBytes(byteArrayOutputStream.toByteArray(), Base64.DONT_BREAK_LINES);
     }
 
-    private Element marshallMessage(XMLObject message) throws MessageEncodingException {
+    private static Element marshallMessage(XMLObject message) throws MessageEncodingException {
         log.debug("Marshalling message");
         try {
             Marshaller marshaller = Configuration.getMarshallerFactory().getMarshaller(message);

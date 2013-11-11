@@ -54,7 +54,6 @@ import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
 import org.opensaml.saml2.core.impl.RequestedAuthnContextBuilder;
 import org.opensaml.security.SAMLSignatureProfileValidator;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
-import org.opensaml.ws.transport.http.HTTPTransportUtils;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.io.Unmarshaller;
 import org.opensaml.xml.io.UnmarshallerFactory;
@@ -75,19 +74,14 @@ import org.xml.sax.SAXException;
 public class SAMLResource {
     public static final String IDP = "https://engine.surfconext.nl/authentication/idp/single-sign-on";
 
-    private static final String CONSUMER = "http://demo17.huygens.knaw.nl/apis-authorization-server/oauth2/authorize";
-
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
-
-    private static final SAMLEncoder SAML_ENCODER = new SAMLEncoder();
 
     @GET
     @Path("/login")
     @Produces(MediaType.TEXT_HTML)
     public Response getAuthenticationRequest() throws MessageEncodingException {
         final AuthnRequest message = buildAuthnRequestObject();
-        final String defB64Message = SAML_ENCODER.deflateAndBase64Encode(message);
-        final String urlEncodedMsg = HTTPTransportUtils.urlEncode(defB64Message);  // URL encoding done by UriBuilder ?
+        final String defB64Message = SAMLEncoder.deflateAndBase64Encode(message);
         UriBuilder uriBuilder = UriBuilder.fromPath(IDP);
         uriBuilder.queryParam("SAMLRequest", defB64Message);
         uriBuilder.queryParam("RelayState", "0xDeadBeef");
