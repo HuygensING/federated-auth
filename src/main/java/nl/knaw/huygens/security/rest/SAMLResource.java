@@ -32,6 +32,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.UUID;
 
 import com.google.common.base.Strings;
+import nl.knaw.huygens.security.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.saml2.SAMLEncoder;
 import org.joda.time.DateTime;
 import org.opensaml.Configuration;
@@ -143,30 +144,38 @@ public class SAMLResource {
             String issuer = assertion.getIssuer().getValue();
             log.debug("issuer: {}", issuer);
 
+            SAML2PrincipalAttributesMapper mapper = new SAML2PrincipalAttributesMapper();
             for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
-                for (Attribute attribute : attributeStatement.getAttributes()) {
-                    final String name = attribute.getName();
-                    log.debug("attribute.name: {}", name);
-                    for (XMLObject xmlObject : attribute.getAttributeValues()) {
-                        final XSAny xsAny = (XSAny) xmlObject;
-                        final String text = xsAny.getTextContent();
-                        log.debug("+- attribute.value: {} (hasChildren: {})", text, xsAny.hasChildren());
-                        for (XMLObject child : xsAny.getOrderedChildren()) {
-                            log.debug("   +- child: {}", child);
-                            NameID nameID = (NameID) child;
-                            log.debug("   +- nameID.format: {}", nameID.getFormat());
-                            log.debug("   +- nameID.value: {}", nameID.getValue());
+                mapper.map(attributeStatement.getAttributes());
+                if (false) {
+                    for (Attribute attribute : attributeStatement.getAttributes()) {
+                        final String name = attribute.getName();
+                        if (name.startsWith("urn:oid")) {
+                            continue; // skip
                         }
+                        log.debug("attribute.name: {}", name);
+                        for (XMLObject xmlObject : attribute.getAttributeValues()) {
+                            final XSAny xsAny = (XSAny) xmlObject;
+                            final String text = xsAny.getTextContent();
+                            log.debug("+- attribute.value: {}", text);
+                            for (XMLObject child : xsAny.getUnknownXMLObjects()) {
+                                log.debug("   +- child: {}", child);
+                                NameID nameID = (NameID) child;
+                                log.debug("   +- nameID.format: {}", nameID.getFormat());
+                                log.debug("   +- nameID.value: {}", nameID.getValue());
+                            }
 
-                        if ("urn:mace:dir:attribute-def:mail".equals(name)) {
-                            attrs.append("mail: [").append(text).append("]\n");
-                        }
-                        else if ("urn:mace:dir:attribute-def:displayName".equals(name)) {
-                            attrs.append("displayName: [").append(text).append("]\n");
+                            if ("urn:mace:dir:attribute-def:mail".equals(name)) {
+                                attrs.append("mail: [").append(text).append("]\n");
+                            }
+                            else if ("urn:mace:dir:attribute-def:displayName".equals(name)) {
+                                attrs.append("displayName: [").append(text).append("]\n");
+                            }
                         }
                     }
                 }
             }
+            log.debug("PrincipalAttributes: {}", mapper.getPrincipalAttributes());
 
             String statusCode = resp.getStatus().getStatusCode().getValue();
             log.debug("statusCode: {}", statusCode);
