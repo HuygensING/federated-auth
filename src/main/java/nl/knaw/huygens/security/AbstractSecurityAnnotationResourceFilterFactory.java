@@ -24,7 +24,6 @@ public abstract class AbstractSecurityAnnotationResourceFilterFactory implements
 
   /**
    * A method needed to override security.
-   * @return
    */
   protected abstract ResourceFilter createNoSecurityResourceFilter();
 

@@ -27,7 +27,6 @@ public abstract class AbstractRolesAllowedResourceFilterFactory extends Abstract
 
   /**
    * A method needed to override security.
-   * @return
    */
   @Override
   protected abstract ResourceFilter createNoSecurityResourceFilter();
