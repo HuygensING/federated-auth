@@ -32,6 +32,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.UUID;
 
 import com.google.common.base.Strings;
+import nl.knaw.huygens.security.model.PrincipalAttributes;
 import nl.knaw.huygens.security.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.saml2.SAMLEncoder;
 import org.joda.time.DateTime;
@@ -125,6 +126,8 @@ public class SAMLResource {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
 
+        SAML2PrincipalAttributesMapper mapper = new SAML2PrincipalAttributesMapper();
+
         StringBuilder attrs = new StringBuilder();
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
@@ -144,7 +147,6 @@ public class SAMLResource {
             String issuer = assertion.getIssuer().getValue();
             log.debug("issuer: {}", issuer);
 
-            SAML2PrincipalAttributesMapper mapper = new SAML2PrincipalAttributesMapper();
             for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
                 mapper.map(attributeStatement.getAttributes());
                 if (false) {
@@ -191,7 +193,8 @@ public class SAMLResource {
 
 
         // todo: retrieve original URI based on relayState
-        return Response.ok("Welcome!\n\n" + attrs.toString()).build();
+        final PrincipalAttributes principalAttributes = mapper.getPrincipalAttributes();
+        return Response.ok("Welcome, " + principalAttributes.getGivenName() + "!\n").build();
     }
 
     private void verify(Signature signature) {

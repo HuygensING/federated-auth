@@ -9,6 +9,8 @@ public class PrincipalAttributes {
 
     private String displayName;
 
+    private String givenName;
+
     private String surname;
 
     private String emailAddress;
@@ -33,6 +35,14 @@ public class PrincipalAttributes {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getGivenName() {
+        return givenName;
+    }
+
+    public void setGivenName(String givenName) {
+        this.givenName = givenName;
     }
 
     public String getSurname() {
@@ -88,6 +98,7 @@ public class PrincipalAttributes {
                 .add("persistentID", persistentID)//
                 .add("commonName", commonName)//
                 .add("displayName", displayName)//
+                .add("givenName", givenName)//
                 .add("surname", surname)//
                 .add("emailAddress", emailAddress)//
                 .add("affiliations", affiliations)//
