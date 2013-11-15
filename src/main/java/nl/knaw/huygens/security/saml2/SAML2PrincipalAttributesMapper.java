@@ -2,7 +2,7 @@ package nl.knaw.huygens.security.saml2;
 
 import java.util.List;
 
-import nl.knaw.huygens.security.model.PrincipalAttributes;
+import nl.knaw.huygens.security.model.HuygensPrincipal;
 import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.core.NameID;
 import org.opensaml.xml.XMLObject;
@@ -54,9 +54,9 @@ public class SAML2PrincipalAttributesMapper {
 
     private static final Logger log = LoggerFactory.getLogger(SAML2PrincipalAttributesMapper.class);
 
-    private final PrincipalAttributes principalAttributes = new PrincipalAttributes();
+    private final HuygensPrincipal huygensPrincipal = new HuygensPrincipal();
 
-    public PrincipalAttributes map(List<Attribute> attributes) {
+    public HuygensPrincipal map(List<Attribute> attributes) {
         for (Attribute attribute : attributes) {
             final String name = attribute.getName();
 
@@ -71,36 +71,36 @@ public class SAML2PrincipalAttributesMapper {
             }
         }
 
-        return principalAttributes;
+        return huygensPrincipal;
     }
 
-    public PrincipalAttributes getPrincipalAttributes() {
-        return principalAttributes;
+    public HuygensPrincipal getHuygensPrincipal() {
+        return huygensPrincipal;
     }
 
     private void mapCommonName(Attribute attribute) {
         final String commonName = getFirstAttributeValueString(attribute);
-        principalAttributes.setCommonName(commonName);
+        huygensPrincipal.setCommonName(commonName);
     }
 
     private void mapDisplayName(Attribute attribute) {
         final String displayName = getFirstAttributeValueString(attribute);
-        principalAttributes.setDisplayName(displayName);
+        huygensPrincipal.setDisplayName(displayName);
     }
 
     private void mapGivenName(Attribute attribute) {
         final String givenName = getFirstAttributeValueString(attribute);
-        principalAttributes.setGivenName(givenName);
+        huygensPrincipal.setGivenName(givenName);
     }
 
     private void mapSurname(Attribute attribute) {
         final String surname = getFirstAttributeValueString(attribute);
-        principalAttributes.setSurname(surname);
+        huygensPrincipal.setSurname(surname);
     }
 
     private void mapEmailAddress(Attribute attribute) {
         final String emailAddress = getFirstAttributeValueString(attribute);
-        principalAttributes.setEmailAddress(emailAddress);
+        huygensPrincipal.setEmailAddress(emailAddress);
     }
 
     private void mapAffiliation(Attribute attribute) {
@@ -108,13 +108,13 @@ public class SAML2PrincipalAttributesMapper {
         for (XMLObject value : attribute.getAttributeValues()) {
             final String affiliation = ((XSAny) value).getTextContent();
             log.debug("  +- [{}]", affiliation);
-            principalAttributes.addAffiliation(affiliation);
+            huygensPrincipal.addAffiliation(affiliation);
         }
     }
 
     private void mapOrganization(Attribute attribute) {
         final String organization = getFirstAttributeValueString(attribute);
-        principalAttributes.setOrganization(organization);
+        huygensPrincipal.setOrganization(organization);
     }
 
     private void mapPersistentID(Attribute attribute) {
@@ -129,7 +129,7 @@ public class SAML2PrincipalAttributesMapper {
                 log.warn("Incorrect format {} for persistent id, expected: {}", format, FORMAT_PERSISTENT);
             }
             else {
-                principalAttributes.setPersistentID(value);
+                huygensPrincipal.setPersistentID(value);
             }
         }
     }

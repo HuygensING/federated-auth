@@ -1,10 +1,11 @@
 package nl.knaw.huygens.security.model;
 
+import java.security.Principal;
 import java.util.EnumSet;
 
 import com.google.common.base.Objects;
 
-public class PrincipalAttributes {
+public class HuygensPrincipal implements Principal {
     private String commonName;
 
     private String displayName;
@@ -27,6 +28,10 @@ public class PrincipalAttributes {
 
     public void setCommonName(String commonName) {
         this.commonName = commonName;
+    }
+
+    public String getName() {
+        return getCommonName();
     }
 
     public String getDisplayName() {
