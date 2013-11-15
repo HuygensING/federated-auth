@@ -34,6 +34,7 @@ import java.util.UUID;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import nl.knaw.huygens.security.model.HuygensPrincipal;
+import nl.knaw.huygens.security.model.HuygensSession;
 import nl.knaw.huygens.security.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.saml2.SAMLEncoder;
 import nl.knaw.huygens.security.service.SessionManager;
@@ -204,11 +205,10 @@ public class SAMLResource {
         final HuygensPrincipal huygensPrincipal = mapper.getHuygensPrincipal();
         if ("urn:oasis:names:tc:SAML:2.0:status:Success".equals(statusCode)) {
             log.debug("Authentication successful: adding session");
-            sessionManager.addSession(relayState, huygensPrincipal);
-        }
-        else {
-            log.debug("Authentication unsuccesful, removing session");
-            sessionManager.removeSession(relayState);
+            HuygensSession session = new HuygensSession();
+            session.setOwner(huygensPrincipal);
+            session.setExpiresOn(new DateTime()); // TODO: add timeout
+            sessionManager.addSession(session);
         }
 
         // todo: retrieve original URI based on relayState
