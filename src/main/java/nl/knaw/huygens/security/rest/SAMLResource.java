@@ -32,9 +32,11 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.UUID;
 
 import com.google.common.base.Strings;
-import nl.knaw.huygens.security.model.PrincipalAttributes;
+import com.google.inject.Inject;
+import nl.knaw.huygens.security.model.HuygensPrincipal;
 import nl.knaw.huygens.security.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.saml2.SAMLEncoder;
+import nl.knaw.huygens.security.service.SessionManager;
 import org.joda.time.DateTime;
 import org.opensaml.Configuration;
 import org.opensaml.common.SAMLVersion;
@@ -77,6 +79,13 @@ public class SAMLResource {
     public static final String IDP = "https://engine.surfconext.nl/authentication/idp/single-sign-on";
 
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
+
+    private final SessionManager sessionManager;
+
+    @Inject
+    public SAMLResource(SessionManager sessionManager) {
+        this.sessionManager = sessionManager;
+    }
 
     @GET
     @Path("/login")
@@ -129,6 +138,7 @@ public class SAMLResource {
         SAML2PrincipalAttributesMapper mapper = new SAML2PrincipalAttributesMapper();
 
         StringBuilder attrs = new StringBuilder();
+        String statusCode = null;
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document doc = db.parse(new ByteArrayInputStream(samlResponse.getBytes()));
@@ -177,9 +187,9 @@ public class SAMLResource {
                     }
                 }
             }
-            log.debug("PrincipalAttributes: {}", mapper.getPrincipalAttributes());
+            log.debug("HuygensPrincipal: {}", mapper.getHuygensPrincipal());
 
-            String statusCode = resp.getStatus().getStatusCode().getValue();
+            statusCode = resp.getStatus().getStatusCode().getValue();
             log.debug("statusCode: {}", statusCode);
         } catch (ParserConfigurationException e) {
             log.warn("ParserConfigurationException: {}", e.getMessage());
@@ -191,10 +201,18 @@ public class SAMLResource {
             log.warn("UnmarshallingException: {}", e.getMessage());
         }
 
+        final HuygensPrincipal huygensPrincipal = mapper.getHuygensPrincipal();
+        if ("urn:oasis:names:tc:SAML:2.0:status:Success".equals(statusCode)) {
+            log.debug("Authentication successful: adding session");
+            sessionManager.addSession(relayState, huygensPrincipal);
+        }
+        else {
+            log.debug("Authentication unsuccesful, removing session");
+            sessionManager.removeSession(relayState);
+        }
 
         // todo: retrieve original URI based on relayState
-        final PrincipalAttributes principalAttributes = mapper.getPrincipalAttributes();
-        return Response.ok("Welcome, " + principalAttributes.getGivenName() + "!\n").build();
+        return Response.ok("Welcome, " + huygensPrincipal.getGivenName() + "!\n").build();
     }
 
     private void verify(Signature signature) {
