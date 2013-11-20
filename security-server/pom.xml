@@ -1,20 +1,57 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>nl.knaw.huygens</groupId>
-    <artifactId>security</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
-  </parent>
-  <artifactId>security-server</artifactId>
-  <name>Security Server</name>
-  <description>The REST API for SSO authenticated sessions.</description>
-  <dependencies>
-    <dependency>
-      <groupId>nl.knaw.huygens</groupId>
-      <artifactId>security-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-  </dependencies>
-  <packaging>war</packaging>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>nl.knaw.huygens</groupId>
+        <artifactId>security</artifactId>
+        <version>2.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>security-server</artifactId>
+    <name>Security Server</name>
+    <description>The REST API for SSO authenticated sessions.</description>
+    <dependencies>
+        <dependency>
+            <groupId>nl.knaw.huygens</groupId>
+            <artifactId>security-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+    <packaging>war</packaging>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Implementation-Build>${buildNumber}</Implementation-Build>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat6-maven-plugin</artifactId>
+                <version>2.1</version>
+                <configuration>
+                    <url>http://demo7.huygens.knaw.nl/manager</url>
+                    <!--<url>http://localhost:8080/manager</url>=-->
+                    <server>test-tomcat</server>
+                    <path>/secure</path>
+                </configuration>
+            </plugin>
+        </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
 </project>

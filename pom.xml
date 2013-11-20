@@ -1,296 +1,259 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		<modelVersion>4.0.0</modelVersion>
 
-    <groupId>nl.knaw.huygens</groupId>
-    <artifactId>security</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
-    <name>Security</name>
-    <packaging>pom</packaging>
-    <description>Contains all the classes that have something to do with securing a Jersey rest service.</description>
+		<groupId>nl.knaw.huygens</groupId>
+		<artifactId>security</artifactId>
+		<version>2.0.0-SNAPSHOT</version>
+		<name>Security</name>
+		<packaging>pom</packaging>
+		<description>Contains all the classes that have something to do with securing a Jersey rest service.</description>
 
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
+		<prerequisites>
+				<maven>3.0</maven>
+		</prerequisites>
 
-    <build>
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh</artifactId>
-                <version>${wagon-ssh.version}</version>
-            </extension>
-        </extensions>
+		<build>
+				<extensions>
+						<extension>
+								<groupId>org.apache.maven.wagon</groupId>
+								<artifactId>wagon-ssh</artifactId>
+								<version>${wagon-ssh.version}</version>
+						</extension>
+				</extensions>
 
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler.version}</version>
-                <configuration>
-                    <source>${jdk.version}</source>
-                    <target>${jdk.version}</target>
-                </configuration>
-            </plugin>
+				<plugins>
+						<plugin>
+								<artifactId>maven-compiler-plugin</artifactId>
+								<version>${maven-compiler.version}</version>
+								<configuration>
+										<source>${jdk.version}</source>
+										<target>${jdk.version}</target>
+								</configuration>
+						</plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${maven-source.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+						<plugin>
+								<groupId>org.apache.maven.plugins</groupId>
+								<artifactId>maven-source-plugin</artifactId>
+								<version>${maven-source.version}</version>
+								<executions>
+										<execution>
+												<id>attach-sources</id>
+												<goals>
+														<goal>jar</goal>
+												</goals>
+										</execution>
+								</executions>
+						</plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven-javadoc.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+						<plugin>
+								<groupId>org.apache.maven.plugins</groupId>
+								<artifactId>maven-javadoc-plugin</artifactId>
+								<version>${maven-javadoc.version}</version>
+								<executions>
+										<execution>
+												<id>attach-javadocs</id>
+												<goals>
+														<goal>jar</goal>
+												</goals>
+										</execution>
+								</executions>
+						</plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>
-                        <manifestEntries>
-                            <Implementation-Build>${buildNumber}</Implementation-Build>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
+						<plugin>
+								<groupId>com.atlassian.maven.plugins</groupId>
+								<artifactId>maven-jgitflow-plugin</artifactId>
+								<version>${jgitflow.version}</version>
+						</plugin>
 
-            <plugin>
-                <groupId>com.atlassian.maven.plugins</groupId>
-                <artifactId>maven-jgitflow-plugin</artifactId>
-                <version>${jgitflow.version}</version>
-            </plugin>
+						<plugin>
+								<groupId>org.codehaus.mojo</groupId>
+								<artifactId>versions-maven-plugin</artifactId>
+								<version>2.1</version>
+						</plugin>
+				</plugins>
+		</build>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>versions-maven-plugin</artifactId>
-                <version>2.1</version>
-            </plugin>
+		<dependencies>
+				<!-- ## Main libraries ## -->
 
-            <plugin>
-                <groupId>org.apache.tomcat.maven</groupId>
-                <artifactId>tomcat6-maven-plugin</artifactId>
-                <version>2.1</version>
-                <configuration>
-                    <url>http://demo7.huygens.knaw.nl/manager</url>
-                    <!--<url>http://localhost:8080/manager</url>=-->
-                    <server>test-tomcat</server>
-                    <path>/secure</path>
-                </configuration>
-            </plugin>
-        </plugins>
+				<!-- Google libraries -->
+				<dependency>
+						<groupId>com.google.guava</groupId>
+						<artifactId>guava</artifactId>
+						<version>${guava.version}</version>
+				</dependency>
+				<dependency>
+						<groupId>com.google.inject</groupId>
+						<artifactId>guice</artifactId>
+						<version>3.0</version>
+				</dependency>
 
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-    </build>
+				<!-- Logging: SLF4J API + Log4J implementation -->
+				<dependency>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+						<version>${slf4j.version}</version>
+				</dependency>
+				<dependency>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-log4j12</artifactId>
+						<version>${slf4j.version}</version>
+				</dependency>
+				<dependency>
+						<groupId>log4j</groupId>
+						<artifactId>log4j</artifactId>
+						<version>${log4j.version}</version>
+				</dependency>
 
-    <dependencies>
-        <!-- ## Main libraries ## -->
+				<!-- Jersey -->
+				<dependency>
+						<groupId>com.sun.jersey</groupId>
+						<artifactId>jersey-core</artifactId>
+						<version>${jersey.version}</version>
+				</dependency>
+				<dependency>
+						<groupId>com.sun.jersey</groupId>
+						<artifactId>jersey-json</artifactId>
+						<version>${jersey.version}</version>
+				</dependency>
+				<dependency>
+						<groupId>com.sun.jersey</groupId>
+						<artifactId>jersey-server</artifactId>
+						<version>${jersey.version}</version>
+				</dependency>
+				<dependency>
+						<groupId>com.sun.jersey</groupId>
+						<artifactId>jersey-servlet</artifactId>
+						<version>${jersey.version}</version>
+				</dependency>
+				<dependency>
+						<groupId>com.sun.jersey.contribs</groupId>
+						<artifactId>jersey-guice</artifactId>
+						<version>${jersey.version}</version>
+				</dependency>
 
-        <!-- Google libraries -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>3.0</version>
-        </dependency>
+				<!-- Various annotations (JSR 250) -->
+				<dependency>
+						<groupId>javax.annotation</groupId>
+						<!-- <artifactId>jsr250-api</artifactId> -->
+						<artifactId>javax.annotation-api</artifactId>
+						<version>${annotation-api.version}</version>
+				</dependency>
 
-        <!-- Logging: SLF4J API + Log4J implementation -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
+				<!-- Servlet spec, provided by Tomcat -->
+				<dependency>
+						<groupId>javax.servlet</groupId>
+						<artifactId>javax.servlet-api</artifactId>
+						<version>${servlet.version}</version>
+						<scope>provided</scope>
+				</dependency>
 
-        <!-- Jersey -->
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-core</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-json</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-server</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-servlet</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey.contribs</groupId>
-            <artifactId>jersey-guice</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
+				<!-- OpenSAML support -->
+				<dependency>
+						<groupId>org.opensaml</groupId>
+						<artifactId>opensaml</artifactId>
+						<version>${opensaml.version}</version>
+				</dependency>
 
-        <!-- Various annotations (JSR 250) -->
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <!-- <artifactId>jsr250-api</artifactId> -->
-            <artifactId>javax.annotation-api</artifactId>
-            <version>${annotation-api.version}</version>
-        </dependency>
+				<!-- Classloader leak prevention -->
+				<dependency>
+						<groupId>se.jiderhamn</groupId>
+						<artifactId>classloader-leak-prevention</artifactId>
+						<version>${classloader-leak-prevention.version}</version>
+						<exclusions>
+								<exclusion>
+										<groupId>javax.servlet</groupId>
+										<artifactId>servlet-api</artifactId>
+								</exclusion>
+						</exclusions>
+				</dependency>
+				<!-- ## End of main libraries ## -->
 
-        <!-- Servlet spec, provided by Tomcat -->
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>${servlet.version}</version>
-            <scope>provided</scope>
-        </dependency>
+				<!-- ## Test libraries ## -->
+				<!-- JUnit test framework -->
+				<dependency>
+						<groupId>junit</groupId>
+						<artifactId>junit</artifactId>
+						<version>${junit.version}</version>
+						<exclusions>
+								<exclusion>
+										<artifactId>hamcrest-core</artifactId>
+										<groupId>org.hamcrest</groupId>
+								</exclusion>
+						</exclusions>
+				</dependency>
 
-        <!-- OpenSAML support -->
-        <dependency>
-            <groupId>org.opensaml</groupId>
-            <artifactId>opensaml</artifactId>
-            <version>${opensaml.version}</version>
-        </dependency>
+				<!-- Mockito mocking framework -->
+				<dependency>
+						<groupId>org.mockito</groupId>
+						<artifactId>mockito-core</artifactId>
+						<version>${mockito.version}</version>
+						<exclusions>
+								<exclusion>
+										<artifactId>hamcrest-core</artifactId>
+										<groupId>org.hamcrest</groupId>
+								</exclusion>
+						</exclusions>
+				</dependency>
+				<dependency>
+						<groupId>org.mockito</groupId>
+						<artifactId>mockito-all</artifactId>
+						<version>${mockito.version}</version>
+				</dependency>
+				<!-- ## End of test libraries ## -->
+		</dependencies>
 
-        <!-- Classloader leak prevention -->
-        <dependency>
-            <groupId>se.jiderhamn</groupId>
-            <artifactId>classloader-leak-prevention</artifactId>
-            <version>${classloader-leak-prevention.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <!-- ## End of main libraries ## -->
+		<distributionManagement>
+				<repository>
+						<id>maven.huygens</id>
+						<name>Huygens Maven Repository</name>
+						<url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
+				</repository>
+				<!-- use the following if you ARE using a snapshot version. -->
+				<snapshotRepository>
+						<id>maven.huygens</id>
+						<name>Huygens Maven Repository</name>
+						<url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
+						<uniqueVersion>false</uniqueVersion>
+				</snapshotRepository>
+		</distributionManagement>
 
-        <!-- ## Test libraries ## -->
-        <!-- JUnit test framework -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>hamcrest-core</artifactId>
-                    <groupId>org.hamcrest</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+		<properties>
+				<!-- JDK source and target compliancy level -->
+				<jdk.version>1.6</jdk.version>
 
-        <!-- Mockito mocking framework -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>hamcrest-core</artifactId>
-                    <groupId>org.hamcrest</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${mockito.version}</version>
-        </dependency>
-        <!-- ## End of test libraries ## -->
-    </dependencies>
+				<!-- Everything UTF-8 please -->
+				<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <distributionManagement>
-        <repository>
-            <id>maven.huygens</id>
-            <name>Huygens Maven Repository</name>
-            <url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
-        </repository>
-        <!-- use the following if you ARE using a snapshot version. -->
-        <snapshotRepository>
-            <id>maven.huygens</id>
-            <name>Huygens Maven Repository</name>
-            <url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
-            <uniqueVersion>false</uniqueVersion>
-        </snapshotRepository>
-    </distributionManagement>
+				<!-- library / plugin versions -->
+				<annotation-api.version>1.2</annotation-api.version>
+				<classloader-leak-prevention.version>1.8.1</classloader-leak-prevention.version>
+				<guava.version>15.0</guava.version>
+				<guice.version>3.0</guice.version>
+				<jersey.version>1.17.1</jersey.version>
+				<jgitflow.version>1.0-alpha21.1</jgitflow.version>
+				<junit.version>4.11</junit.version>
+				<log4j.version>1.2.17</log4j.version>
+				<maven-compiler.version>3.1</maven-compiler.version>
+				<maven-javadoc.version>2.9.1</maven-javadoc.version>
+				<maven-source.version>2.2.1</maven-source.version>
+				<mockito.version>1.9.5</mockito.version>
+				<opensaml.version>2.5.3</opensaml.version>
+				<servlet.version>3.0.1</servlet.version>
+				<slf4j.version>1.7.5</slf4j.version>
+				<wagon-ssh.version>2.2</wagon-ssh.version>
+		</properties>
 
-    <properties>
-        <!-- JDK source and target compliancy level -->
-        <jdk.version>1.6</jdk.version>
-
-        <!-- Everything UTF-8 please -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <!-- library / plugin versions -->
-        <annotation-api.version>1.2</annotation-api.version>
-        <classloader-leak-prevention.version>1.8.1</classloader-leak-prevention.version>
-        <guava.version>15.0</guava.version>
-        <guice.version>3.0</guice.version>
-        <jersey.version>1.17.1</jersey.version>
-        <jgitflow.version>1.0-alpha21.1</jgitflow.version>
-        <junit.version>4.11</junit.version>
-        <log4j.version>1.2.17</log4j.version>
-        <maven-compiler.version>3.1</maven-compiler.version>
-        <maven-javadoc.version>2.9.1</maven-javadoc.version>
-        <maven-source.version>2.2.1</maven-source.version>
-        <mockito.version>1.9.5</mockito.version>
-        <opensaml.version>2.5.3</opensaml.version>
-        <servlet.version>3.0.1</servlet.version>
-        <slf4j.version>1.7.5</slf4j.version>
-        <wagon-ssh.version>2.2</wagon-ssh.version>
-    </properties>
-
-    <scm>
-        <connection>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</connection>
-        <developerConnection>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</developerConnection>
-        <url>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</url>
-        <tag>HEAD</tag>
-    </scm>
-    <modules>
-      <module>security-core</module>
-      <module>security-client</module>
-      <module>security-server</module>
-    </modules>
+		<scm>
+				<connection>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</connection>
+				<developerConnection>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</developerConnection>
+				<url>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</url>
+				<tag>HEAD</tag>
+		</scm>
+		<modules>
+				<module>security-core</module>
+				<module>security-client</module>
+				<module>security-server</module>
+		</modules>
 </project>
