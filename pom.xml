@@ -4,10 +4,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>nl.knaw.huygens</groupId>
-    <artifactId>huygens-security</artifactId>
+    <artifactId>security</artifactId>
     <version>1.0.2-SNAPSHOT</version>
     <name>Huygens Security Server</name>
-    <packaging>war</packaging>
+    <packaging>pom</packaging>
     <description>Contains all the classes that have something to do with securing a Jersey rest service.</description>
 
     <prerequisites>
@@ -288,4 +288,9 @@
         <url>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</url>
         <tag>HEAD</tag>
     </scm>
+    <modules>
+      <module>security-core</module>
+      <module>security-client</module>
+      <module>security-server</module>
+    </modules>
 </project>
