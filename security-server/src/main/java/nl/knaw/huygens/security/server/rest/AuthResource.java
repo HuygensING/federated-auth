@@ -1,5 +1,8 @@
 package nl.knaw.huygens.security.server.rest;
 
+import static nl.knaw.huygens.security.core.rest.API.ID_PARAM;
+import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_PATH;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -15,7 +18,6 @@ import nl.knaw.huygens.security.server.service.SessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Path("/auth")
 public class AuthResource {
     private static final Logger log = LoggerFactory.getLogger(AuthResource.class);
 
@@ -27,9 +29,9 @@ public class AuthResource {
     }
 
     @GET
-    @Path("/session/{id}")
+    @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response authenticateSession(@PathParam("id") String id) {
+    public Response authenticateSession(@PathParam(ID_PARAM) String id) {
         UUID sessionId = null;
 
         try {
