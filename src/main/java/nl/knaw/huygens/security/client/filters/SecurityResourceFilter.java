@@ -50,7 +50,7 @@ public final class SecurityResourceFilter implements ResourceFilter, ContainerRe
   protected SecurityContext createSecurityContext(ContainerRequest request) {
     SecurityInformation securityInformation;
     try {
-      securityInformation = authorizationHandler.getSecurityInformation(request);
+      securityInformation = authorizationHandler.getSecurityInformation(null);
     } catch (UnauthorizedException e) {
       throw new WebApplicationException(Status.UNAUTHORIZED);
     }
