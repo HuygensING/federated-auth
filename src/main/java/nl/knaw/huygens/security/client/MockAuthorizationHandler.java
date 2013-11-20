@@ -7,12 +7,15 @@ import java.util.UUID;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal.Affiliation;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-
+/**
+ * A mock implementation for the {@code AuthorizationHandler} interface.
+ * @author martijnm
+ *
+ */
 public class MockAuthorizationHandler implements AuthorizationHandler {
 
   @Override
-  public SecurityInformation getSecurityInformation(ContainerRequest request) throws UnauthorizedException {
+  public SecurityInformation getSecurityInformation(String sessionId) throws UnauthorizedException {
     SecurityInformation securityInformation = new SecurityInformation();
     securityInformation.setAffiliations(EnumSet.of(Affiliation.employee));
     securityInformation.setCommonName("John Doe");
