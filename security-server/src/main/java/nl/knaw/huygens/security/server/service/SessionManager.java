@@ -5,7 +5,10 @@ import java.util.UUID;
 
 import com.google.common.collect.Maps;
 import com.google.inject.Singleton;
+
+import nl.knaw.huygens.security.core.model.SecuritySession;
 import nl.knaw.huygens.security.server.model.HuygensSession;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +23,7 @@ public class SessionManager {
         sessions = Maps.newConcurrentMap(); // TODO: check MapMaker
     }
 
-    public HuygensSession getSession(UUID sessionKey) {
+    public SecuritySession getSession(UUID sessionKey) {
         log.debug("Request for session: [{}]", sessionKey);
         return sessions.get(sessionKey);
     }

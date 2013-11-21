@@ -4,11 +4,9 @@ import java.security.Principal;
 import java.util.EnumSet;
 
 import nl.knaw.huygens.security.core.model.Affiliation;
+import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 
-/**
- * A class that contains the mandatory information, that is needed to create a SecurityContext.
- *
- */
+import com.google.common.base.Objects;
 
 public class HuygensSecurityInformation implements SecurityInformation {
   private String commonName;
@@ -20,6 +18,22 @@ public class HuygensSecurityInformation implements SecurityInformation {
   private String organization;
   private String persistentID;
   private Principal principal;
+
+  public HuygensSecurityInformation() {
+
+  }
+
+  public HuygensSecurityInformation(HuygensPrincipal huygensPrincipal) {
+    setAffiliations(huygensPrincipal.getAffiliations());
+    setCommonName(huygensPrincipal.getCommonName());
+    setDisplayName(huygensPrincipal.getDisplayName());
+    setEmailAddress(huygensPrincipal.getEmailAddress());
+    setGivenName(huygensPrincipal.getGivenName());
+    setOrganization(huygensPrincipal.getOrganization());
+    setPersistentID(huygensPrincipal.getPersistentID());
+    setPrincipal(huygensPrincipal);
+    setSurname(huygensPrincipal.getSurname());
+  }
 
   @Override
   public String getDisplayName() {
@@ -100,6 +114,47 @@ public class HuygensSecurityInformation implements SecurityInformation {
 
   public void setPersistentID(String persistentID) {
     this.persistentID = persistentID;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof HuygensSecurityInformation)) {
+      return false;
+    }
+
+    HuygensSecurityInformation other = (HuygensSecurityInformation) obj;
+
+    boolean isEqual = Objects.equal(other.affiliations, affiliations);
+    isEqual &= Objects.equal(other.commonName, commonName);
+    isEqual &= Objects.equal(other.displayName, displayName);
+    isEqual &= Objects.equal(other.emailAddress, emailAddress);
+    isEqual &= Objects.equal(other.givenName, givenName);
+    isEqual &= Objects.equal(other.organization, organization);
+    isEqual &= Objects.equal(other.persistentID, persistentID);
+    isEqual &= Objects.equal(other.surname, surname);
+    isEqual &= Objects.equal(other.principal, principal);
+
+    return isEqual;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(affiliations, commonName, displayName, emailAddress, givenName, organization, persistentID, surname, principal);
+  }
+
+  @Override
+  public String toString() {
+    return Objects.toStringHelper(this)//
+        .add("persistentID", persistentID)//
+        .add("commonName", commonName)//
+        .add("displayName", displayName)//
+        .add("givenName", givenName)//
+        .add("surname", surname)//
+        .add("emailAddress", emailAddress)//
+        .add("affiliations", affiliations)//
+        .add("organization", organization)//
+        .add("principal", principal)//
+        .toString();
   }
 
 }

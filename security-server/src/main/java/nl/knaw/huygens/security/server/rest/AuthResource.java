@@ -10,11 +10,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+
 import java.util.UUID;
 
 import com.google.inject.Inject;
-import nl.knaw.huygens.security.server.model.HuygensSession;
+
+import nl.knaw.huygens.security.core.model.SecuritySession;
 import nl.knaw.huygens.security.server.service.SessionManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +44,7 @@ public class AuthResource {
             return Response.status(Status.BAD_REQUEST).build();
         }
 
-        final HuygensSession session = sessionManager.getSession(sessionId);
+        final SecuritySession session = sessionManager.getSession(sessionId);
 
         if (session == null) {
             return Response.status(Status.NOT_FOUND).build();

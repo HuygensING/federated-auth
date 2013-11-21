@@ -5,24 +5,27 @@ import java.util.EnumSet;
 
 import nl.knaw.huygens.security.core.model.Affiliation;
 
+/**
+ * A model that contains the information, provided by the Identity provider.
+ */
 public interface SecurityInformation {
 
-  public abstract String getDisplayName();
+  String getDisplayName();
 
-  public abstract Principal getPrincipal();
+  Principal getPrincipal();
 
-  public abstract String getCommonName();
+  String getCommonName();
 
-  public abstract String getGivenName();
+  String getGivenName();
 
-  public abstract String getSurname();
+  String getSurname();
 
-  public abstract String getEmailAddress();
+  String getEmailAddress();
 
-  public abstract EnumSet<Affiliation> getAffiliations();
+  EnumSet<Affiliation> getAffiliations();
 
-  public abstract String getOrganization();
+  String getOrganization();
 
-  public abstract String getPersistentID();
+  String getPersistentID();
 
 }
