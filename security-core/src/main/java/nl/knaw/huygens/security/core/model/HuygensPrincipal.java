@@ -110,6 +110,4 @@ public class HuygensPrincipal implements Principal {
                 .add("organization", organization)//
                 .toString();
     }
-
-    public static enum Affiliation {employee, student, affiliate, staff, member}
 }
