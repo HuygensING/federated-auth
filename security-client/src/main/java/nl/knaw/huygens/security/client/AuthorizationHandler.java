@@ -9,14 +9,14 @@ import nl.knaw.huygens.security.client.model.SecurityInformation;
  */
 public interface AuthorizationHandler {
 
-	/**
-	 * Extracts the information for needed for creating a SecurityContext from a
-	 * ContainerRequest. The implementation of this interface will be dependent
-	 * on the 3rd party security implementation. 
-	 * @param sessionId the id of the user session.
-	 * 
-	 * @return the information needed to create a SecurityContext.
-	 * @throws UnauthorizedException will be thrown when the @{code sessionId} is null or invalid.
-	 */
-	SecurityInformation getSecurityInformation(String sessionId) throws UnauthorizedException;
+  /**
+   * Extracts the information for needed for creating a SecurityContext from a
+   * ContainerRequest. The implementation of this interface will be dependent
+   * on the 3rd party security implementation. 
+   * @param sessionId the id of the user session.
+   * 
+   * @return the information needed to create a SecurityContext.
+   * @throws UnauthorizedException will be thrown when the @{code sessionId} is null or invalid.
+   */
+  SecurityInformation getSecurityInformation(String sessionId) throws UnauthorizedException;
 }

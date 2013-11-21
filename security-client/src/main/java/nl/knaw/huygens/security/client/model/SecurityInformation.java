@@ -3,95 +3,26 @@ package nl.knaw.huygens.security.client.model;
 import java.security.Principal;
 import java.util.EnumSet;
 
-import nl.knaw.huygens.security.core.model.HuygensPrincipal.Affiliation;
+import nl.knaw.huygens.security.core.model.Affiliation;
 
-/**
- * A class that contains the mandatory information, that is needed to create a SecurityContext.
- *
- */
+public interface SecurityInformation {
 
-// TODO create interface
-public class SecurityInformation {
-  private String commonName;
-  private String displayName;
-  private String givenName;
-  private String surname;
-  private String emailAddress;
-  private EnumSet<Affiliation> affiliations = EnumSet.noneOf(Affiliation.class);
-  private String organization;
-  private String persistentID;
-  private Principal principal;
+  public abstract String getDisplayName();
 
-  public String getDisplayName() {
-    return displayName;
-  }
+  public abstract Principal getPrincipal();
 
-  public void setDisplayName(String displayName) {
-    this.displayName = displayName;
-  }
+  public abstract String getCommonName();
 
-  public Principal getPrincipal() {
-    return principal;
-  }
+  public abstract String getGivenName();
 
-  public void setPrincipal(Principal principal) {
-    this.principal = principal;
-  }
+  public abstract String getSurname();
 
-  public String getCommonName() {
-    return commonName;
-  }
+  public abstract String getEmailAddress();
 
-  public void setCommonName(String commonName) {
-    this.commonName = commonName;
-  }
+  public abstract EnumSet<Affiliation> getAffiliations();
 
-  public String getGivenName() {
-    return givenName;
-  }
+  public abstract String getOrganization();
 
-  public void setGivenName(String givenName) {
-    this.givenName = givenName;
-  }
-
-  public String getSurname() {
-    return surname;
-  }
-
-  public void setSurname(String surname) {
-    this.surname = surname;
-  }
-
-  public String getEmailAddress() {
-    return emailAddress;
-  }
-
-  public void setEmailAddress(String emailAddress) {
-    this.emailAddress = emailAddress;
-  }
-
-  public EnumSet<Affiliation> getAffiliations() {
-    return affiliations;
-  }
-
-  public void setAffiliations(EnumSet<Affiliation> affiliations) {
-    this.affiliations = affiliations;
-  }
-
-  public String getOrganization() {
-    return organization;
-  }
-
-  public void setOrganization(String organization) {
-    this.organization = organization;
-  }
-
-  public String getPersistentID() {
-    return persistentID;
-  }
-
-  public void setPersistentID(String persistentID) {
-    this.persistentID = persistentID;
-  }
+  public abstract String getPersistentID();
 
 }
