@@ -28,7 +28,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
   @Override
   public SecurityInformation getSecurityInformation(String sessionToken) throws UnauthorizedException {
     if (StringUtils.isBlank(sessionToken)) {
-      LOG.info("sessionId was empty");
+      LOG.info("Session token was empty");
       throw new UnauthorizedException();
     }
 
@@ -41,7 +41,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
     case OK:
       break;
     case BAD_REQUEST:
-      LOG.error("Illegal session token {} is unknown.", sessionToken);
+      LOG.error("Illegal session token {}.", sessionToken);
       throw new UnauthorizedException();
     default:
       LOG.error("Unknown execption for token {}.", sessionToken);
