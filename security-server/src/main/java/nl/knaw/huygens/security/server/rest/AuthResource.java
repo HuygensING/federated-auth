@@ -1,5 +1,6 @@
 package nl.knaw.huygens.security.server.rest;
 
+import static nl.knaw.huygens.security.core.rest.API.AUTH_PREFIX;
 import static nl.knaw.huygens.security.core.rest.API.ID_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_PATH;
 
@@ -10,17 +11,15 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
 import java.util.UUID;
 
 import com.google.inject.Inject;
-
 import nl.knaw.huygens.security.core.model.SecuritySession;
 import nl.knaw.huygens.security.server.service.SessionManager;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Path(AUTH_PREFIX)
 public class AuthResource {
     private static final Logger log = LoggerFactory.getLogger(AuthResource.class);
 
@@ -32,9 +31,17 @@ public class AuthResource {
     }
 
     @GET
+    @Path("/hello")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "Hello";
+    }
+
+    @GET
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(MediaType.APPLICATION_JSON)
     public Response authenticateSession(@PathParam(ID_PARAM) String id) {
+        log.debug("Request for authentication, sessionId: [{}]", id);
         UUID sessionId = null;
 
         try {
@@ -45,6 +52,7 @@ public class AuthResource {
         }
 
         final SecuritySession session = sessionManager.getSession(sessionId);
+        log.debug("Session for id: [{}]: [{}]", sessionId, session);
 
         if (session == null) {
             return Response.status(Status.NOT_FOUND).build();
