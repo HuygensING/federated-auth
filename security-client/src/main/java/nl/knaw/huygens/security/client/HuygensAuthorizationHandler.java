@@ -18,10 +18,13 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
   private Logger LOG = LoggerFactory.getLogger(HuygensAuthorizationHandler.class);
 
   private final Client client;
+  private final String authorizationUrl;
 
   @Inject
-  public HuygensAuthorizationHandler(Client client) {
+  public HuygensAuthorizationHandler(Client client, String authorizationUrl) {
     checkNotNull(client);
+    checkNotNull(authorizationUrl);
+    this.authorizationUrl = authorizationUrl;
     this.client = client;
   }
 
@@ -32,7 +35,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
       throw new UnauthorizedException();
     }
 
-    ClientResponse response = client.resource(API.SESSION_AUTHENTICATION_URI).path(sessionToken).get(ClientResponse.class);
+    ClientResponse response = client.resource(authorizationUrl).path(API.SESSION_AUTHENTICATION_URI).path(sessionToken).get(ClientResponse.class);
 
     switch (response.getClientResponseStatus()) {
     case NOT_FOUND:
