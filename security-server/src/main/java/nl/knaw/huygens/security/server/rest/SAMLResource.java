@@ -1,11 +1,14 @@
 package nl.knaw.huygens.security.server.rest;
 
+import static nl.knaw.huygens.security.core.rest.API.REDIRECT_URL_HTTP_PARAM;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -19,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyFactory;
@@ -29,11 +33,14 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
+import nl.knaw.huygens.security.core.rest.API;
 import nl.knaw.huygens.security.server.model.HuygensSession;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.server.saml2.SAMLEncoder;
@@ -43,13 +50,11 @@ import org.opensaml.Configuration;
 import org.opensaml.common.SAMLVersion;
 import org.opensaml.common.xml.SAMLConstants;
 import org.opensaml.saml2.core.Assertion;
-import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.core.AttributeStatement;
 import org.opensaml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml2.core.AuthnContextComparisonTypeEnumeration;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.NameID;
 import org.opensaml.saml2.core.NameIDPolicy;
 import org.opensaml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml2.core.impl.AuthnContextClassRefBuilder;
@@ -63,7 +68,6 @@ import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.io.Unmarshaller;
 import org.opensaml.xml.io.UnmarshallerFactory;
 import org.opensaml.xml.io.UnmarshallingException;
-import org.opensaml.xml.schema.XSAny;
 import org.opensaml.xml.security.x509.BasicX509Credential;
 import org.opensaml.xml.signature.Signature;
 import org.opensaml.xml.signature.SignatureValidator;
@@ -79,24 +83,50 @@ import org.xml.sax.SAXException;
 public class SAMLResource {
     public static final String IDP = "https://engine.surfconext.nl/authentication/idp/single-sign-on";
 
+    public static final String SAML_SUCCESS = "urn:oasis:names:tc:SAML:2.0:status:Success";
+
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
+
+    private static final Map<UUID, HuygensSession> pendingLogins = Maps.newHashMap();
+
+    private static final Map<UUID, URI> redirectURIs = Maps.newHashMap();
 
     private final SessionManager sessionManager;
 
     @Inject
     public SAMLResource(SessionManager sessionManager) {
         this.sessionManager = sessionManager;
+        log.debug("pending login count: {}", pendingLogins.size());
+        log.debug("pending redirect URIs: {}", redirectURIs.size());
     }
 
     @GET
     @Path("/login")
     @Produces(MediaType.TEXT_HTML)
-    public Response getAuthenticationRequest() throws MessageEncodingException {
+    public Response getAuthenticationRequest(@QueryParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI)
+            throws MessageEncodingException {
+
+        log.debug("QueryParam '" + REDIRECT_URL_HTTP_PARAM + "': [{}]", redirectURI);
+
+        if (redirectURI == null) {
+            return Response.status(Status.BAD_REQUEST) //
+                    .entity("Missing parameter: '" + REDIRECT_URL_HTTP_PARAM + "'") //
+                    .build();
+        }
+
+        final UUID relayState = UUID.randomUUID();
+        log.debug("remembering redirectURI: [{}]", redirectURI);
+        redirectURIs.put(relayState, redirectURI);
+
+        final HuygensSession session = new HuygensSession();
+        log.debug("new login: relayState=[{}], session=[{}]", relayState, session.getId());
+        pendingLogins.put(relayState, session);
+
         final AuthnRequest message = buildAuthnRequestObject();
         final String defB64Message = SAMLEncoder.deflateAndBase64Encode(message);
         UriBuilder uriBuilder = UriBuilder.fromPath(IDP);
         uriBuilder.queryParam("SAMLRequest", defB64Message);
-        uriBuilder.queryParam("RelayState", "0xDeadBeef");
+        uriBuilder.queryParam("RelayState", relayState);
 
         /* HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
          * To ensure this, the following rules SHOULD be followed.
@@ -127,7 +157,15 @@ public class SAMLResource {
 
         if (Strings.isNullOrEmpty(relayState)) {
             log.warn("Missing (null or empty) RelayState parameter");
-            // let's allow this for now, until we actually need to relate information back to the original request.
+            return Response.status(Status.BAD_REQUEST) //
+                    .entity("Missing parameter 'RelayState' (null or empty)").build();
+        }
+
+        UUID pendingID = UUID.fromString(relayState);
+        final HuygensSession session = pendingLogins.get(pendingID);
+        if (session == null) {
+            log.warn("No pending login for RelayState: [{}]", pendingID);
+            return Response.ok().build(); // ignore
         }
 
         String samlResponse = new String(Base64.decode(base64SamlResponse));
@@ -138,7 +176,6 @@ public class SAMLResource {
 
         SAML2PrincipalAttributesMapper mapper = new SAML2PrincipalAttributesMapper();
 
-        StringBuilder attrs = new StringBuilder();
         String statusCode = null;
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
@@ -160,33 +197,6 @@ public class SAMLResource {
 
             for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
                 mapper.map(attributeStatement.getAttributes());
-                if (false) {
-                    for (Attribute attribute : attributeStatement.getAttributes()) {
-                        final String name = attribute.getName();
-                        if (name.startsWith("urn:oid")) {
-                            continue; // skip
-                        }
-                        log.debug("attribute.name: {}", name);
-                        for (XMLObject xmlObject : attribute.getAttributeValues()) {
-                            final XSAny xsAny = (XSAny) xmlObject;
-                            final String text = xsAny.getTextContent();
-                            log.debug("+- attribute.value: {}", text);
-                            for (XMLObject child : xsAny.getUnknownXMLObjects()) {
-                                log.debug("   +- child: {}", child);
-                                NameID nameID = (NameID) child;
-                                log.debug("   +- nameID.format: {}", nameID.getFormat());
-                                log.debug("   +- nameID.value: {}", nameID.getValue());
-                            }
-
-                            if ("urn:mace:dir:attribute-def:mail".equals(name)) {
-                                attrs.append("mail: [").append(text).append("]\n");
-                            }
-                            else if ("urn:mace:dir:attribute-def:displayName".equals(name)) {
-                                attrs.append("displayName: [").append(text).append("]\n");
-                            }
-                        }
-                    }
-                }
             }
             log.debug("HuygensPrincipal: {}", mapper.getHuygensPrincipal());
 
@@ -203,16 +213,28 @@ public class SAMLResource {
         }
 
         final HuygensPrincipal huygensPrincipal = mapper.getHuygensPrincipal();
-        if ("urn:oasis:names:tc:SAML:2.0:status:Success".equals(statusCode)) {
-            log.debug("Authentication successful: adding session");
-            HuygensSession session = new HuygensSession();
+        URI redirectURI = redirectURIs.get(pendingID);
+
+        if (SAML_SUCCESS.equals(statusCode)) {
             session.setOwner(huygensPrincipal);
             session.setExpiresOn(new DateTime()); // TODO: add timeout
+
+            log.debug("Authentication successful: adding session");
             sessionManager.addSession(session);
+
+            log.debug("Removing pending login RelayState: [{}]", relayState);
+            pendingLogins.remove(relayState);
+            redirectURIs.remove(relayState);
         }
 
         // todo: retrieve original URI based on relayState
-        return Response.ok("Welcome, " + huygensPrincipal.getGivenName() + "!\n").build();
+//        return Response.ok("Welcome, " + huygensPrincipal.getGivenName() + "!\n").build();
+        UriBuilder uriBuilder = UriBuilder.fromUri(redirectURI);
+        uriBuilder.queryParam(API.SESSION_ID_HTTP_PARAM, session.getId());
+        final URI uri = uriBuilder.build();
+        log.debug("Redirecting to URI: [{}]", uri);
+
+        return Response.seeOther(uri).build();
     }
 
     private void verify(Signature signature) {
