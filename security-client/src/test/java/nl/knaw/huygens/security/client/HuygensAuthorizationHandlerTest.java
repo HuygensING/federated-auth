@@ -24,6 +24,7 @@ import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.WebResource;
 
 public class HuygensAuthorizationHandlerTest {
+  private static final String AUTHORIZATION_URL = "http://localhost:9000";
   private static final String DEFAULT_SESSION_ID = "test";
   private static final String PERSISTENT_ID = "111111333";
   private static final String ORGANISATION = "Doe inc.";
@@ -38,7 +39,7 @@ public class HuygensAuthorizationHandlerTest {
   @Before
   public void setUp() {
     client = mock(Client.class);
-    instance = new HuygensAuthorizationHandler(client);
+    instance = new HuygensAuthorizationHandler(client, AUTHORIZATION_URL);
   }
 
   @After
@@ -94,7 +95,8 @@ public class HuygensAuthorizationHandlerTest {
   private void setUpClient(ClientResponse response) {
     WebResource resource = mock(WebResource.class);
     when(resource.path(DEFAULT_SESSION_ID)).thenReturn(resource);
-    when(client.resource(API.SESSION_AUTHENTICATION_URI)).thenReturn(resource);
+    when(resource.path(API.SESSION_AUTHENTICATION_URI)).thenReturn(resource);
+    when(client.resource(AUTHORIZATION_URL)).thenReturn(resource);
     when(resource.get(ClientResponse.class)).thenReturn(response);
   }
 
