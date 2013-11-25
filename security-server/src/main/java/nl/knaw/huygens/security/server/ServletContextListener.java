@@ -6,6 +6,7 @@ import static com.sun.jersey.api.core.ResourceConfig.PROPERTY_CONTAINER_REQUEST_
 import static com.sun.jersey.api.core.ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS;
 import static com.sun.jersey.api.core.ResourceConfig.PROPERTY_RESOURCE_FILTER_FACTORIES;
 import static com.sun.jersey.api.json.JSONConfiguration.FEATURE_POJO_MAPPING;
+import static com.sun.jersey.spi.container.servlet.ServletContainer.PROPERTY_WEB_PAGE_CONTENT_REGEX;
 
 import javax.servlet.ServletContextEvent;
 import java.security.NoSuchAlgorithmException;
@@ -29,11 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ServletContextListener extends GuiceServletContextListener {
-    /**
-     * Base package to (recursively) scan for root resource and provider classes
-     */
-    public static final String BASE_PACKAGE = "nl.knaw.huygens.security.server";
-
     private static final Logger log = LoggerFactory.getLogger(ServletContextListener.class);
 
     private static final Joiner COMMA_JOINER = Joiner.on(',');
@@ -61,7 +57,8 @@ public class ServletContextListener extends GuiceServletContextListener {
         params.put(FEATURE_POJO_MAPPING, "true");
 
         params.put(PROPERTY_PACKAGES, getClass().getPackage().getName());
-//        params.put(PROPERTY_PACKAGES, BASE_PACKAGE);
+
+        params.put(PROPERTY_WEB_PAGE_CONTENT_REGEX, "/static/.*");
 
         params.put(PROPERTY_CONTAINER_REQUEST_FILTERS, getRequestFilters());
         params.put(PROPERTY_CONTAINER_RESPONSE_FILTERS, getResponseFilters());
