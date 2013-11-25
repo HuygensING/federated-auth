@@ -3,14 +3,14 @@ package nl.knaw.huygens.security.server.model;
 import java.util.UUID;
 
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
-import nl.knaw.huygens.security.core.model.SecuritySession;
+import nl.knaw.huygens.security.core.model.HuygensSession;
 
-public class HuygensSession implements SecuritySession {
+public class HuygensSessionImpl implements HuygensSession {
     private final UUID id;
 
     private HuygensPrincipal owner;
 
-    public HuygensSession() {
+    public HuygensSessionImpl() {
         this.id = UUID.randomUUID();
     }
 
@@ -18,9 +18,6 @@ public class HuygensSession implements SecuritySession {
         return id;
     }
 
-    /* (non-Javadoc)
-     * @see nl.knaw.huygens.security.server.model.SecuritySession#getOwner()
-     */
     @Override
     public HuygensPrincipal getOwner() {
         return owner;
