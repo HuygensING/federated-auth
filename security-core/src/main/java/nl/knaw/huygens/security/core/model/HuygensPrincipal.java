@@ -3,12 +3,9 @@ package nl.knaw.huygens.security.core.model;
 import java.security.Principal;
 import java.util.EnumSet;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.annotate.JsonProperty;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Objects;
 
-@JsonIgnoreProperties("@name")
 public class HuygensPrincipal implements Principal {
   private String commonName;
 
@@ -34,7 +31,7 @@ public class HuygensPrincipal implements Principal {
     this.commonName = commonName;
   }
 
-  @JsonProperty("@name")
+  @JsonIgnore
   public String getName() {
     return getCommonName();
   }
