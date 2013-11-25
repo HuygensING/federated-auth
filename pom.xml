@@ -208,13 +208,13 @@
 				<repository>
 						<id>maven.huygens</id>
 						<name>Huygens Maven Repository</name>
-						<url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
+						<url>scp://hi7.huygens.knaw.nl/data/hibuild/public_html/repository</url>
 				</repository>
 				<!-- use the following if you ARE using a snapshot version. -->
 				<snapshotRepository>
 						<id>maven.huygens</id>
 						<name>Huygens Maven Repository</name>
-						<url>scp://hi7dev.huygens.knaw.nl/data/hibuild/public_html/repository</url>
+						<url>scp://hi7.huygens.knaw.nl/data/hibuild/public_html/repository</url>
 						<uniqueVersion>false</uniqueVersion>
 				</snapshotRepository>
 		</distributionManagement>
@@ -246,9 +246,9 @@
 		</properties>
 
 		<scm>
-				<connection>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</connection>
-				<developerConnection>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</developerConnection>
-				<url>scm:git:ssh://hi7dev.huygens.knaw.nl/data/git/git/security.git</url>
+				<connection>scm:git:ssh://hi7.huygens.knaw.nl/data/git/security.git</connection>
+				<developerConnection>scm:git:ssh://hi7.huygens.knaw.nl/data/git/security.git</developerConnection>
+				<url>scm:git:ssh://hi7.huygens.knaw.nl/data/git/security.git</url>
 				<tag>HEAD</tag>
 		</scm>
 		<modules>

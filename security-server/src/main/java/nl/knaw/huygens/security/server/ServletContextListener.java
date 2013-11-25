@@ -13,7 +13,6 @@ import java.util.Map;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
-import com.google.common.io.BaseEncoding;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
@@ -33,13 +32,11 @@ public class ServletContextListener extends GuiceServletContextListener {
     /**
      * Base package to (recursively) scan for root resource and provider classes
      */
-    public static final String BASE_PACKAGE = "nl.knaw.huygens.security";
+    public static final String BASE_PACKAGE = "nl.knaw.huygens.security.server";
 
     private static final Logger log = LoggerFactory.getLogger(ServletContextListener.class);
 
     private static final Joiner COMMA_JOINER = Joiner.on(',');
-
-    public static final BaseEncoding BASE_64 = BaseEncoding.base64();
 
     private static String getClassNames(Class<?>... classes) {
         return COMMA_JOINER.join(new ClassNameIterator(classes));
@@ -63,10 +60,8 @@ public class ServletContextListener extends GuiceServletContextListener {
         params.put(FEATURE_LOGGING_DISABLE_ENTITY, "true");
         params.put(FEATURE_POJO_MAPPING, "true");
 
-        // params.put(PROPERTY_PACKAGES, getClass().getPackage().getName());
-        params.put(PROPERTY_PACKAGES, BASE_PACKAGE);
-
-        // params.put(PROPERTY_WEB_PAGE_CONTENT_REGEX, "/(static|docs)/.*");
+        params.put(PROPERTY_PACKAGES, getClass().getPackage().getName());
+//        params.put(PROPERTY_PACKAGES, BASE_PACKAGE);
 
         params.put(PROPERTY_CONTAINER_REQUEST_FILTERS, getRequestFilters());
         params.put(PROPERTY_CONTAINER_RESPONSE_FILTERS, getResponseFilters());
