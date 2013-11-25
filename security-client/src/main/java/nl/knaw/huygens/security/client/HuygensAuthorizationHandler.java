@@ -3,7 +3,7 @@ package nl.knaw.huygens.security.client;
 import static com.google.common.base.Preconditions.checkNotNull;
 import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
-import nl.knaw.huygens.security.core.model.SecuritySession;
+import nl.knaw.huygens.security.core.model.HuygensSession;
 import nl.knaw.huygens.security.core.rest.API;
 
 import org.apache.commons.lang.StringUtils;
@@ -65,7 +65,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     LOG.info("clientResponse: " + response);
 
-    SecuritySession session = response.getEntity(ClientSession.class);
+    HuygensSession session = response.getEntity(ClientSession.class);
 
     return new HuygensSecurityInformation(session.getOwner());
   }

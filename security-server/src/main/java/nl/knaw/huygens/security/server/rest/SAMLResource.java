@@ -41,7 +41,7 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 import nl.knaw.huygens.security.core.rest.API;
-import nl.knaw.huygens.security.server.model.HuygensSession;
+import nl.knaw.huygens.security.server.model.HuygensSessionImpl;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.server.saml2.SAMLEncoder;
 import nl.knaw.huygens.security.server.service.SessionManager;
@@ -87,7 +87,7 @@ public class SAMLResource {
 
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
-    private static final Map<UUID, HuygensSession> pendingLogins = Maps.newHashMap();
+    private static final Map<UUID, HuygensSessionImpl> pendingLogins = Maps.newHashMap();
 
     private static final Map<UUID, URI> redirectURIs = Maps.newHashMap();
 
@@ -118,7 +118,7 @@ public class SAMLResource {
         log.debug("remembering redirectURI: [{}]", redirectURI);
         redirectURIs.put(relayState, redirectURI);
 
-        final HuygensSession session = new HuygensSession();
+        final HuygensSessionImpl session = new HuygensSessionImpl();
         log.debug("new login: relayState=[{}], session=[{}]", relayState, session.getId());
         pendingLogins.put(relayState, session);
 
@@ -162,7 +162,7 @@ public class SAMLResource {
         }
 
         UUID pendingID = UUID.fromString(relayState);
-        final HuygensSession session = pendingLogins.get(pendingID);
+        final HuygensSessionImpl session = pendingLogins.get(pendingID);
         if (session == null) {
             log.warn("No pending login for RelayState: [{}]", pendingID);
             return Response.ok().build(); // ignore
