@@ -217,7 +217,6 @@ public class SAMLResource {
 
         if (SAML_SUCCESS.equals(statusCode)) {
             session.setOwner(huygensPrincipal);
-            session.setExpiresOn(new DateTime()); // TODO: add timeout
 
             log.debug("Authentication successful: adding session");
             sessionManager.addSession(session);
