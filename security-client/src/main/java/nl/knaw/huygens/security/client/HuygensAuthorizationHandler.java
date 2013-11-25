@@ -66,9 +66,6 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
     LOG.info("clientResponse: " + response);
 
     SecuritySession session = response.getEntity(ClientSession.class);
-    //HuygensPrincipal principal = response.getEntity(HuygensPrincipal.class);
-
-    //return new HuygensSecurityInformation(principal);
 
     return new HuygensSecurityInformation(session.getOwner());
   }
