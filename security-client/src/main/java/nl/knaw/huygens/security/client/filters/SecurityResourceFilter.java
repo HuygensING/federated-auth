@@ -5,15 +5,19 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.SecurityContext;
 
+import nl.knaw.huygens.security.client.AuthorizationHandler;
+import nl.knaw.huygens.security.client.SecurityContextCreator;
+import nl.knaw.huygens.security.client.UnauthorizedException;
+import nl.knaw.huygens.security.client.model.SecurityInformation;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
 import com.sun.jersey.spi.container.ContainerResponseFilter;
 import com.sun.jersey.spi.container.ResourceFilter;
-
-import nl.knaw.huygens.security.client.AuthorizationHandler;
-import nl.knaw.huygens.security.client.SecurityContextCreator;
-import nl.knaw.huygens.security.client.model.SecurityInformation;
-import nl.knaw.huygens.security.client.UnauthorizedException;
 
 /**
  * The SecurityResourceFilter uses an AuthorizationHandler to get the mandatory information to create a SecurityContext. 
@@ -23,6 +27,7 @@ import nl.knaw.huygens.security.client.UnauthorizedException;
  *
  */
 public final class SecurityResourceFilter implements ResourceFilter, ContainerRequestFilter {
+  private static final Logger LOG = LoggerFactory.getLogger(SecurityResourceFilter.class);
   protected final SecurityContextCreator securityContextCreator;
   protected final AuthorizationHandler authorizationHandler;
 
@@ -31,7 +36,6 @@ public final class SecurityResourceFilter implements ResourceFilter, ContainerRe
     this.authorizationHandler = authorizationHandler;
   }
 
-  
   @Override
   public ContainerRequest filter(ContainerRequest request) {
 
@@ -54,6 +58,9 @@ public final class SecurityResourceFilter implements ResourceFilter, ContainerRe
   protected SecurityContext createSecurityContext(ContainerRequest request) {
     SecurityInformation securityInformation;
     String token = getToken(request);
+
+    LOG.info("token: {} length: {}", token, StringUtils.length(token));
+
     try {
       securityInformation = authorizationHandler.getSecurityInformation(token);
     } catch (UnauthorizedException e) {
@@ -62,8 +69,9 @@ public final class SecurityResourceFilter implements ResourceFilter, ContainerRe
 
     return securityContextCreator.createSecurityContext(securityInformation);
   }
-  
-  private String getToken(ContainerRequest request){
+
+  private String getToken(ContainerRequest request) {
+
     return request.getHeaderValue(HttpHeaders.AUTHORIZATION);
   }
 
