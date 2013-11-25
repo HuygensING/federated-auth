@@ -10,9 +10,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 public class HuygensAuthorizationHandler implements AuthorizationHandler {
   private Logger LOG = LoggerFactory.getLogger(HuygensAuthorizationHandler.class);
@@ -20,9 +20,13 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
   private final Client client;
   private final String authorizationUrl;
 
-  @Inject
   public HuygensAuthorizationHandler(Client client, String authorizationUrl) {
     checkNotNull(client);
+    if (StringUtils.isBlank(authorizationUrl)) {
+      LOG.info("Authorization url was empty");
+      throw new IllegalArgumentException("Authorization url was empty");
+    }
+
     checkNotNull(authorizationUrl);
     this.authorizationUrl = authorizationUrl;
     this.client = client;
@@ -30,12 +34,20 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
   @Override
   public SecurityInformation getSecurityInformation(String sessionToken) throws UnauthorizedException {
+
+    LOG.info("sessionToken: {}", sessionToken);
     if (StringUtils.isBlank(sessionToken)) {
       LOG.info("Session token was empty");
       throw new UnauthorizedException();
     }
 
-    ClientResponse response = client.resource(authorizationUrl).path(API.SESSION_AUTHENTICATION_URI).path(sessionToken).get(ClientResponse.class);
+    LOG.info("authorization url: {}", authorizationUrl);
+
+    WebResource resource = client.resource(authorizationUrl).path(API.SESSION_AUTHENTICATION_URI).path(sessionToken);
+
+    LOG.info("url: {}", resource.getURI());
+
+    ClientResponse response = resource.get(ClientResponse.class);
 
     switch (response.getClientResponseStatus()) {
     case NOT_FOUND:
@@ -51,7 +63,12 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
       throw new UnauthorizedException();
     }
 
-    SecuritySession session = response.getEntity(SecuritySession.class);
+    LOG.info("clientResponse: " + response);
+
+    SecuritySession session = response.getEntity(ClientSession.class);
+    //HuygensPrincipal principal = response.getEntity(HuygensPrincipal.class);
+
+    //return new HuygensSecurityInformation(principal);
 
     return new HuygensSecurityInformation(session.getOwner());
   }
