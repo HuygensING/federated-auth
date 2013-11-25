@@ -17,8 +17,6 @@
 <script type="text/javascript">
     $(document).ready(function(){
     var accessToken = getParameterByName('hsid');
-    console.log('accessToken: ', accessToken);
-    console.log('accessToken.length: ', accessToken.length);
     var wl = window.location;
     var hsurl = wl.protocol + wl.port + wl.pathname;
     if (accessToken.length < 1) {
