@@ -31,23 +31,16 @@ public class AuthResource {
     }
 
     @GET
-    @Path("/hello")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "Hello";
-    }
-
-    @GET
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(MediaType.APPLICATION_JSON)
     public Response authenticateSession(@PathParam(ID_PARAM) String id) {
         log.debug("Request for authentication, sessionId: [{}]", id);
-        UUID sessionId = null;
 
+        final UUID sessionId;
         try {
             sessionId = UUID.fromString(id);
         } catch (IllegalArgumentException e) {
-            log.warn("Got illegal (crafted?) sessionId: [{}]", id);
+            log.warn("Illegal sessionId (not a UUID): [{}]", id);
             return Response.status(Status.BAD_REQUEST).build();
         }
 
