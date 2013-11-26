@@ -41,7 +41,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
-import nl.knaw.huygens.security.server.model.HuygensSessionImpl;
+import nl.knaw.huygens.security.core.model.HuygensSession;
 import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.server.service.SessionManager;
@@ -203,21 +203,35 @@ public class SAMLResource {
 
         final SAML2PrincipalAttributesMapper mapper = new SAML2PrincipalAttributesMapper();
         final HuygensPrincipal huygensPrincipal = mapper.map(assertion).getHuygensPrincipal();
-        log.debug("Login succesful: [{}]", huygensPrincipal);
 
-        // TODO: make HuygensSessionImpl accept principal in constructor and remove setter.
-        final HuygensSessionImpl session = new HuygensSessionImpl();
+        final UriBuilder uriBuilder = UriBuilder.fromUri(loginRequest.getRedirectURI());
         if (SAML_SUCCESS.equals(statusCode)) {
-            session.setOwner(huygensPrincipal);
+            log.debug("Login succesful: [{}]", huygensPrincipal);
+            final HuygensSession session = createSession(huygensPrincipal);
             sessionManager.addSession(session);
+            uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
+        } else {
+            log.warn("Login failed: [{}] ([{}])", huygensPrincipal, statusCode);
         }
 
-        UriBuilder uriBuilder = UriBuilder.fromUri(loginRequest.getRedirectURI());
-        uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
         final URI uri = uriBuilder.build();
         log.debug("Redirecting to: [{}]", uri);
-
         return Response.seeOther(uri).build();
+    }
+
+    private HuygensSession createSession(final HuygensPrincipal huygensPrincipal) {
+        return new HuygensSession() {
+            private final UUID hsid = UUID.randomUUID();
+            @Override
+            public UUID getId() {
+                return hsid;
+            }
+
+            @Override
+            public HuygensPrincipal getOwner() {
+                return huygensPrincipal;
+            }
+        };
     }
 
     private void verify(Signature signature) {
