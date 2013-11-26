@@ -3,7 +3,9 @@ package nl.knaw.huygens.security.server.saml2;
 import java.util.List;
 
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
+import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.Attribute;
+import org.opensaml.saml2.core.AttributeStatement;
 import org.opensaml.saml2.core.NameID;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.schema.XSAny;
@@ -54,28 +56,46 @@ public class SAML2PrincipalAttributesMapper {
 
     private static final Logger log = LoggerFactory.getLogger(SAML2PrincipalAttributesMapper.class);
 
-    private final HuygensPrincipal huygensPrincipal = new HuygensPrincipal();
+    private final HuygensPrincipal huygensPrincipal;
 
-    public HuygensPrincipal map(List<Attribute> attributes) {
-        for (Attribute attribute : attributes) {
-            final String name = attribute.getName();
-
-            if (name.startsWith("urn:mace")) {
-                mapMACEAttribute(attribute);
-            }
-            else if (name.startsWith("urn:oid")) {
-                mapOIDAttribute(attribute);
-            }
-            else {
-                log.warn("Unknown attribute schema (neither urn:mace, nor urn:oid): [{}]", name);
-            }
-        }
-
-        return huygensPrincipal;
+    public SAML2PrincipalAttributesMapper() {
+        this.huygensPrincipal = new HuygensPrincipal();
     }
 
     public HuygensPrincipal getHuygensPrincipal() {
         return huygensPrincipal;
+    }
+
+    public SAML2PrincipalAttributesMapper map(Assertion assertion) {
+        for (AttributeStatement attributeStatement : assertion.getAttributeStatements()) {
+            map(attributeStatement);
+        }
+
+        return this;
+    }
+
+    public SAML2PrincipalAttributesMapper map(AttributeStatement attributeStatement) {
+        for (Attribute attribute : attributeStatement.getAttributes()) {
+            map(attribute);
+        }
+
+        return this;
+    }
+
+    public SAML2PrincipalAttributesMapper map(Attribute attribute) {
+        final String name = attribute.getName();
+
+        if (name.startsWith("urn:mace")) {
+            mapMACEAttribute(attribute);
+        }
+        else if (name.startsWith("urn:oid")) {
+            mapOIDAttribute(attribute);
+        }
+        else {
+            log.warn("Unknown attribute schema (neither urn:mace, nor urn:oid): [{}]", name);
+        }
+
+        return this;
     }
 
     private void mapCommonName(Attribute attribute) {
@@ -104,10 +124,8 @@ public class SAML2PrincipalAttributesMapper {
     }
 
     private void mapAffiliation(Attribute attribute) {
-        log.debug("affiliations for [{}]:", attribute.getName());
         for (XMLObject value : attribute.getAttributeValues()) {
             final String affiliation = ((XSAny) value).getTextContent();
-            log.debug("  +- [{}]", affiliation);
             huygensPrincipal.addAffiliation(affiliation);
         }
     }
@@ -123,8 +141,6 @@ public class SAML2PrincipalAttributesMapper {
             NameID nameID = (NameID) child;
             final String format = nameID.getFormat();
             final String value = nameID.getValue();
-            log.debug("  +- nameID.format: {}", format);
-            log.debug("  +- nameID.value: {}", value);
             if (!FORMAT_PERSISTENT.equals(format)) {
                 log.warn("Incorrect format {} for persistent id, expected: {}", format, FORMAT_PERSISTENT);
             }
@@ -156,8 +172,7 @@ public class SAML2PrincipalAttributesMapper {
             value = ((XSAny) xmlObj).getTextContent();
         }
 
-        log.debug("first attribute value for [{}] is [{}]", attribute.getName(), value);
-
+        log.trace("first attribute value for [{}] is [{}]", attribute.getName(), value);
         return value;
     }
 
@@ -188,7 +203,8 @@ public class SAML2PrincipalAttributesMapper {
             mapPersistentID(attribute);
         }
         else {
-            log.warn("Unmapped urn:mace attribute: {}", name);
+            final String value = getFirstAttributeValueString(attribute);
+            log.trace("Unmapped urn:mace attribute: [{}] -> [{}]", name, value);
         }
     }
 
@@ -219,10 +235,11 @@ public class SAML2PrincipalAttributesMapper {
             mapPersistentID(attribute);
         }
         else if (URN_OID_LEGACY_ORGA.equals(name)) {
-            log.info("Ignoring legacy home organization attribute");
+            log.trace("Ignoring legacy home organization attribute");
         }
         else {
-            log.warn("Unmapped urn:oid attribute: {}", name);
+            final String value = getFirstAttributeValueString(attribute);
+            log.trace("Unmapped urn:oid attribute: [{}] -> [{}]", name, value);
         }
     }
 }

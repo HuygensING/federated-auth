@@ -20,7 +20,7 @@ public class SessionManager {
 
     public SessionManager() {
         log.debug("SessionManager created");
-        sessions = Maps.newConcurrentMap(); // TODO: check MapMaker
+        sessions = Maps.newHashMap();
     }
 
     public HuygensSession getSession(UUID sessionKey) {
