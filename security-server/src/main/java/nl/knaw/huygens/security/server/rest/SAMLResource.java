@@ -34,16 +34,15 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 import nl.knaw.huygens.security.core.model.HuygensSession;
 import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
+import nl.knaw.huygens.security.server.service.LoginRequestManager;
 import nl.knaw.huygens.security.server.service.SessionManager;
 import org.joda.time.DateTime;
 import org.opensaml.Configuration;
@@ -95,14 +94,14 @@ public class SAMLResource {
 
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
-    private static final Map<UUID, LoginRequest> loginRequestsByRelayState = Maps.newHashMap();
-
     private final SessionManager sessionManager;
+    private final LoginRequestManager loginManager;
 
     @Inject
-    public SAMLResource(SessionManager sessionManager) {
+    public SAMLResource(SessionManager sessionManager, LoginRequestManager loginManager) {
         this.sessionManager = sessionManager;
-        log.debug("pending login request count: {}", loginRequestsByRelayState.size());
+        this.loginManager = loginManager;
+        log.debug("pending login request count: {}", loginManager.getPendingLoginRequestCount());
     }
 
     @GET
@@ -116,12 +115,10 @@ public class SAMLResource {
         }
 
         final LoginRequest loginRequest = new LoginRequest(redirectURI);
-        final UUID relayState = loginRequest.getRelayState();
-        log.debug("Login request: relayState=[{}], redirectURI=[{}]", relayState, loginRequest.getRedirectURI());
-        loginRequestsByRelayState.put(relayState, loginRequest);
+        loginManager.addLoginRequest(loginRequest);
 
         UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL);
-        uriBuilder.queryParam("RelayState", relayState);
+        uriBuilder.queryParam("RelayState", loginRequest.getRelayState());
         uriBuilder.queryParam("SAMLRequest", deflateAndBase64Encode(buildAuthnRequestObject()));
 
         /* 3.4.5.1, HTTP and Caching Considerations:
@@ -163,15 +160,14 @@ public class SAMLResource {
             return Response.status(Status.BAD_REQUEST).entity(MSG_ILLEGAL_RELAY_STATE).build();
         }
 
-        log.trace("Fetching and removing login request for relayState: [{}]", relayState);
-        final LoginRequest loginRequest = loginRequestsByRelayState.remove(relayState);
+        final LoginRequest loginRequest = loginManager.removeLoginRequest(relayState);
         if (loginRequest == null) {
             log.warn(MSG_UNKNOWN_RELAY_STATE);
             return Response.status(Status.BAD_REQUEST).entity(MSG_UNKNOWN_RELAY_STATE).build();
         }
+        log.debug("Found pending login request: [{}]", loginRequest);
 
         String samlResponse = new String(Base64.decode(samlResponseParam));
-
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
 
@@ -217,6 +213,13 @@ public class SAMLResource {
         final URI uri = uriBuilder.build();
         log.debug("Redirecting to: [{}]", uri);
         return Response.seeOther(uri).build();
+    }
+
+    @GET
+    @Path("/expire")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response removeExpiredLoginRequests() {
+        return Response.ok(loginManager.removeExpiredRequests()).build();
     }
 
     private HuygensSession createSession(final HuygensPrincipal huygensPrincipal) {
