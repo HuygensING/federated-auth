@@ -30,9 +30,9 @@ public class SessionManager {
         sessions.put(session.getId(), session);
     }
 
-    public void removeSession(HuygensSession session) {
-        log.debug("Removing session: [{}]", session.getId());
-        sessions.remove(session.getId());
+    public HuygensSession removeSession(UUID sessionId) {
+        log.debug("Removing session: [{}]", sessionId);
+        return sessions.remove(sessionId);
     }
 
 }

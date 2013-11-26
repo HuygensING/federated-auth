@@ -4,6 +4,7 @@ import static nl.knaw.huygens.security.core.rest.API.ID_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_PATH;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_URI;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -54,4 +55,25 @@ public class SessionResource {
         return Response.ok(session).build();
     }
 
+    @DELETE
+    @Path(SESSION_AUTHENTICATION_PATH)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteSession(@PathParam(ID_PARAM) String id) {
+        log.debug("Request to delete session: [{}]", id);
+
+        final UUID sessionId;
+        try {
+            sessionId = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            log.warn("Illegal sessionId (not a UUID): [{}]", id);
+            return Response.status(Status.BAD_REQUEST).build();
+        }
+
+        HuygensSession removedSession = sessionManager.removeSession(sessionId);
+        if (removedSession == null) {
+            return Response.status(Status.NOT_FOUND).build();
+        }
+
+        return Response.ok(removedSession).build();
+    }
 }

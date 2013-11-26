@@ -1,5 +1,6 @@
 package nl.knaw.huygens.security.server.service;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,29 +36,38 @@ public class LoginRequestManager {
 
     public LoginRequest removeLoginRequest(UUID relayState) {
         log.debug("Fetching and removing login request: [{}]", relayState);
+
         final LoginRequest loginRequest = loginRequestsByRelayState.remove(relayState);
+        if (loginRequest == null || loginRequest.isExpired()) {
+            return null;
+        }
+
         log.debug("Found login request: [{}]", loginRequest);
-        return loginRequest.isExpired() ? null : loginRequest;
+        return loginRequest;
     }
 
     public int getPendingLoginRequestCount() {
         return loginRequestsByRelayState.size();
     }
 
-    public List<LoginRequest> removeExpiredRequests() {
-        final List<LoginRequest> removedLoginRequests = Lists.newArrayList();
-        log.debug("Removing expired login requests");
+    public Collection<LoginRequest> getPendingLoginRequests() {
+        return loginRequestsByRelayState.values();
+    }
+
+    public List<LoginRequest> flushExpiredRequests() {
+        final List<LoginRequest> flushedLoginRequests = Lists.newArrayList();
+        log.debug("Flushing expired login requests");
 
         Iterator<LoginRequest> iter = loginRequestsByRelayState.values().iterator();
         while (iter.hasNext()) {
             final LoginRequest loginRequest = iter.next();
             if (loginRequest.isExpired()) {
-                log.debug("Removing expired login request: [{}]", loginRequest.getRelayState());
-                removedLoginRequests.add(loginRequest);
+                log.debug("Flushing: [{}]", loginRequest.getRelayState());
+                flushedLoginRequests.add(loginRequest);
                 iter.remove();
             }
         }
 
-        return removedLoginRequests;
+        return flushedLoginRequests;
     }
 }

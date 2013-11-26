@@ -1,14 +1,18 @@
 package nl.knaw.huygens.security.server.rest;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static nl.knaw.huygens.security.core.rest.API.REDIRECT_URL_HTTP_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_ID_HTTP_PARAM;
 import static nl.knaw.huygens.security.server.saml2.SAMLEncoder.deflateAndBase64Encode;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
@@ -34,6 +38,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Collection;
 import java.util.UUID;
 
 import com.google.common.base.Strings;
@@ -72,7 +77,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-@Path("/saml2")
+@Path("/saml2") // Part of the SURFconext contract -- Thou shalt not change this path!
 public class SAMLResource {
     public static final String SURF_IDP_SSO_URL = "https://engine.surfconext.nl/authentication/idp/single-sign-on";
 
@@ -95,6 +100,7 @@ public class SAMLResource {
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
     private final SessionManager sessionManager;
+
     private final LoginRequestManager loginManager;
 
     @Inject
@@ -135,12 +141,12 @@ public class SAMLResource {
     }
 
     @POST
-    @Path("acs")
+    @Path("/acs")  // Part of the SURFconext contract -- Thou shalt not change this path!
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public Response assertionConsumerService(@FormParam("SAMLResponse") String samlResponseParam,
-                                             @FormParam("RelayState") String relayStateParam) {
-        log.trace("assertionConsumerService: RelayState={}, SAMLResponse={}", relayStateParam, samlResponseParam);
+    public Response consumeAssertion(@FormParam("SAMLResponse") String samlResponseParam,
+                                     @FormParam("RelayState") String relayStateParam) {
+        log.trace("consumeAssertion: RelayState={}, SAMLResponse={}", relayStateParam, samlResponseParam);
 
         if (Strings.isNullOrEmpty(samlResponseParam)) {
             log.warn(MSG_MISSING_SAML_RESPONSE);
@@ -163,7 +169,7 @@ public class SAMLResource {
         final LoginRequest loginRequest = loginManager.removeLoginRequest(relayState);
         if (loginRequest == null) {
             log.warn(MSG_UNKNOWN_RELAY_STATE);
-            return Response.status(Status.NOT_FOUND).entity(MSG_UNKNOWN_RELAY_STATE).build();
+            return Response.status(NOT_FOUND).entity(MSG_UNKNOWN_RELAY_STATE).build();
         }
 
         String samlResponse = new String(Base64.decode(samlResponseParam));
@@ -205,7 +211,8 @@ public class SAMLResource {
             final HuygensSession session = createSession(huygensPrincipal);
             sessionManager.addSession(session);
             uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
-        } else {
+        }
+        else {
             log.warn("Login failed: [{}] ([{}])", huygensPrincipal, statusCode);
         }
 
@@ -214,16 +221,43 @@ public class SAMLResource {
         return Response.seeOther(uri).build();
     }
 
+    @POST
+    @Path("/flush")
+    @Produces(APPLICATION_JSON)
+    public Collection<LoginRequest> flushExpiredLoginRequests() {
+        return loginManager.flushExpiredRequests();
+    }
+
     @GET
-    @Path("/expire")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response removeExpiredLoginRequests() {
-        return Response.ok(loginManager.removeExpiredRequests()).build();
+    @Path("/requests")
+    @Produces(APPLICATION_JSON)
+    public Collection<LoginRequest> getLoginRequests() {
+        return loginManager.getPendingLoginRequests();
+    }
+
+    @DELETE
+    @Path("/requests/{id}")
+    @Produces(APPLICATION_JSON)
+    public Response removeLoginRequest(@PathParam("id") String id) {
+        final UUID relayState;
+        try {
+            relayState = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            log.warn("Illegal relayState (not a UUID): [{}]", id);
+            return Response.status(Status.BAD_REQUEST).build();
+        }
+
+        final LoginRequest request = loginManager.removeLoginRequest(relayState);
+        if (request == null) {
+            return Response.ok().build();
+        }
+        return Response.ok(request).build();
     }
 
     private HuygensSession createSession(final HuygensPrincipal huygensPrincipal) {
         return new HuygensSession() {
             private final UUID hsid = UUID.randomUUID();
+
             @Override
             public UUID getId() {
                 return hsid;
