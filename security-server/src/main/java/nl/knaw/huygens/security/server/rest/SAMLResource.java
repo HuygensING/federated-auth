@@ -206,7 +206,7 @@ public class SAMLResource {
 
         final UriBuilder uriBuilder = UriBuilder.fromUri(loginRequest.getRedirectURI());
         if (SAML_SUCCESS.equals(statusCode)) {
-            log.debug("Login succesful: [{}]", huygensPrincipal);
+            log.debug("Login successful: [{}]", huygensPrincipal);
             final HuygensSession session = createSession(huygensPrincipal);
             sessionManager.addSession(session);
             uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
