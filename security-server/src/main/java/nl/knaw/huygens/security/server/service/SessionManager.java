@@ -21,7 +21,7 @@ public class SessionManager {
     }
 
     public HuygensSession getSession(UUID sessionKey) {
-        log.debug("Request for session: [{}]", sessionKey);
+        log.debug("Getting session: [{}]", sessionKey);
         return sessions.get(sessionKey);
     }
 
