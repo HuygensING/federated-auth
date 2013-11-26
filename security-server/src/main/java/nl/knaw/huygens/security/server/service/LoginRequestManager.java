@@ -35,7 +35,9 @@ public class LoginRequestManager {
 
     public LoginRequest removeLoginRequest(UUID relayState) {
         log.debug("Fetching and removing login request: [{}]", relayState);
-        return loginRequestsByRelayState.remove(relayState);
+        final LoginRequest loginRequest = loginRequestsByRelayState.remove(relayState);
+        log.debug("Found login request: [{}]", loginRequest);
+        return loginRequest.isExpired() ? null : loginRequest;
     }
 
     public int getPendingLoginRequestCount() {

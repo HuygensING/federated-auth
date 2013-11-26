@@ -90,7 +90,7 @@ public class SAMLResource {
 
     private static final String MSG_ILLEGAL_RELAY_STATE = "Illegal RelayState (not a UUID)";
 
-    private static final String MSG_UNKNOWN_RELAY_STATE = "Unknown RelayState";
+    private static final String MSG_UNKNOWN_RELAY_STATE = "Login request unknown or expired. Have a nice day.";
 
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
@@ -163,9 +163,8 @@ public class SAMLResource {
         final LoginRequest loginRequest = loginManager.removeLoginRequest(relayState);
         if (loginRequest == null) {
             log.warn(MSG_UNKNOWN_RELAY_STATE);
-            return Response.status(Status.BAD_REQUEST).entity(MSG_UNKNOWN_RELAY_STATE).build();
+            return Response.status(Status.NOT_FOUND).entity(MSG_UNKNOWN_RELAY_STATE).build();
         }
-        log.debug("Found pending login request: [{}]", loginRequest);
 
         String samlResponse = new String(Base64.decode(samlResponseParam));
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
