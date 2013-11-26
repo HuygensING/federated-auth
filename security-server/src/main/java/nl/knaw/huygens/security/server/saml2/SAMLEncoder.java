@@ -23,7 +23,7 @@ public class SAMLEncoder {
     private static final Logger log = LoggerFactory.getLogger(SAMLEncoder.class);
 
     public static String deflateAndBase64Encode(SAMLObject message) throws MessageEncodingException {
-        log.debug("Deflating and Base64 encoding SAML message");
+        log.trace("Deflating and Base64 encoding SAML message");
         String messageStr = XMLHelper.nodeToString(marshallMessage(message));
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -41,7 +41,7 @@ public class SAMLEncoder {
     }
 
     private static Element marshallMessage(XMLObject message) throws MessageEncodingException {
-        log.debug("Marshalling message");
+        log.trace("Marshalling message");
         try {
             Marshaller marshaller = Configuration.getMarshallerFactory().getMarshaller(message);
             if (marshaller == null) {
