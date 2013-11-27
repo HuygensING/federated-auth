@@ -18,15 +18,16 @@
     $(document).ready(function(){
     var accessToken = getParameterByName('hsid');
     var wl = window.location;
-    var hsurl = wl.protocol + wl.port + wl.pathname;
+    var hsurl = encodeURIComponent(wl.origin + wl.pathname);
+
     if (accessToken.length < 1) {
-        window.location = 'https://secure.huygens.knaw.nl/saml2/login?hsurl=' + hsurl;
+        window.location.replace('https://secure.huygens.knaw.nl/saml2/login?hsurl=' + hsurl);
     }
     $.ajax({
     url: 'https://secure.huygens.knaw.nl/sessions/' + accessToken,
     error: function(data){
     if(data.status === 400 || data.status === 404) {
-        window.location = 'https://secure.huygens.knaw.nl/saml2/login?hsurl=' + hsurl;
+        window.location.replace('https://secure.huygens.knaw.nl/saml2/login?hsurl=' + hsurl);
     }
     },
     success:function(data){
