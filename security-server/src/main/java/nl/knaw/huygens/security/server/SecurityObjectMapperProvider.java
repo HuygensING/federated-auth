@@ -15,12 +15,17 @@ public class SecurityObjectMapperProvider implements ContextResolver<ObjectMappe
 
     @Override
     public ObjectMapper getContext(Class<?> type) {
-        log.debug("Configuring ObjectMapper (adding JodaTime support)");
-
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JodaModule());
+        log.debug("Setting up Jackson ObjectMapper: [{}]", objectMapper);
+
+        // These are 'dev' settings giving us human readable output.
         objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+        // JodaModule maps DateTime to a flat String (or timestamp, see above) instead of recursively yielding
+        // the entire object hierarchy of DateTime which is way too verbose.
+        objectMapper.registerModule(new JodaModule());
+
         return objectMapper;
     }
 }

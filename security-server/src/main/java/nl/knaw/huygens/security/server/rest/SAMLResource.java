@@ -17,8 +17,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriBuilderException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -45,6 +45,7 @@ import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 import nl.knaw.huygens.security.core.model.HuygensSession;
+import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.server.service.LoginRequestManager;
@@ -87,15 +88,19 @@ public class SAMLResource {
 
     private static final String RES_SURFCONEXT_CERT = "/certificates/surfconext.cert";
 
-    private static final String MSG_MISSING_REDIRECT_URI = "Missing parameter '" + REDIRECT_URL_HTTP_PARAM + "'";
-
-    private static final String MSG_MISSING_SAML_RESPONSE = "Missing parameter 'SAMLResponse' (null or empty)";
+    private static final String MSG_ILLEGAL_RELAY_STATE = "Illegal RelayState (not a UUID)";
 
     private static final String MSG_MISSING_RELAY_STATE = "Missing parameter 'RelayState' (null or empty)";
 
-    private static final String MSG_ILLEGAL_RELAY_STATE = "Illegal RelayState (not a UUID)";
+    private static final String MSG_MISSING_SAML_RESPONSE = "Missing parameter 'SAMLResponse' (null or empty)";
 
     private static final String MSG_UNKNOWN_RELAY_STATE = "Login request unknown or expired. Have a nice day.";
+
+    private static final String QUERY_PARAM_RELAY_STATE = "RelayState";
+
+    private static final String QUERY_PARAM_SAML_REQUEST = "SAMLRequest";
+
+    private static final String QUERY_PARAM_SAML_RESPONSE = "SAMLResponse";
 
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
@@ -113,19 +118,15 @@ public class SAMLResource {
     @GET
     @Path("/login")
     @Produces(MediaType.TEXT_HTML)
-    public Response getAuthenticationRequest(@QueryParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI)
-            throws MessageEncodingException {
-        if (redirectURI == null) {
-            log.warn(MSG_MISSING_REDIRECT_URI);
-            return Response.status(Status.BAD_REQUEST).entity(MSG_MISSING_REDIRECT_URI).build();
-        }
+    public Response login(@QueryParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
+        log.debug("Login request, redirectURI=[{}]", redirectURI);
 
-        final LoginRequest loginRequest = new LoginRequest(redirectURI);
-        loginManager.addLoginRequest(loginRequest);
+        final UUID relayState = loginManager.createLoginRequest(redirectURI);
+        final String request = deflateAndBase64Encode(buildAuthnRequestObject());
 
         UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL);
-        uriBuilder.queryParam("RelayState", loginRequest.getRelayState());
-        uriBuilder.queryParam("SAMLRequest", deflateAndBase64Encode(buildAuthnRequestObject()));
+        uriBuilder.queryParam(QUERY_PARAM_RELAY_STATE, relayState);
+        uriBuilder.queryParam(QUERY_PARAM_SAML_REQUEST, request);
 
         /* 3.4.5.1, HTTP and Caching Considerations:
          * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
@@ -144,26 +145,25 @@ public class SAMLResource {
     @Path("/acs")  // Part of the SURFconext contract -- Thou shalt not change this path!
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public Response consumeAssertion(@FormParam("SAMLResponse") String samlResponseParam,
-                                     @FormParam("RelayState") String relayStateParam) {
+    public Response consumeAssertion(@FormParam(QUERY_PARAM_SAML_RESPONSE) String samlResponseParam,
+                                     @FormParam(QUERY_PARAM_RELAY_STATE) String relayStateParam) {
         log.trace("consumeAssertion: RelayState={}, SAMLResponse={}", relayStateParam, samlResponseParam);
 
         if (Strings.isNullOrEmpty(samlResponseParam)) {
             log.warn(MSG_MISSING_SAML_RESPONSE);
-            return Response.status(Status.BAD_REQUEST).entity(MSG_MISSING_SAML_RESPONSE).build();
+            throw new BadRequestException(MSG_MISSING_SAML_RESPONSE);
         }
 
         if (Strings.isNullOrEmpty(relayStateParam)) {
             log.warn(MSG_MISSING_RELAY_STATE);
-            return Response.status(Status.BAD_REQUEST).entity(MSG_MISSING_RELAY_STATE).build();
+            throw new BadRequestException(MSG_MISSING_RELAY_STATE);
         }
 
         final UUID relayState;
         try {
             relayState = UUID.fromString(relayStateParam);
         } catch (IllegalArgumentException e) {
-            log.warn(MSG_ILLEGAL_RELAY_STATE);
-            return Response.status(Status.BAD_REQUEST).entity(MSG_ILLEGAL_RELAY_STATE).build();
+            throw new BadRequestException(MSG_ILLEGAL_RELAY_STATE);
         }
 
         final LoginRequest loginRequest = loginManager.removeLoginRequest(relayState);
@@ -209,23 +209,35 @@ public class SAMLResource {
         if (SAML_SUCCESS.equals(statusCode)) {
             log.debug("Login successful: [{}]", huygensPrincipal);
             final HuygensSession session = createSession(huygensPrincipal);
+            try {
+                uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Unable to append query parameter to redirectURI");
+            }
             sessionManager.addSession(session);
-            uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
         }
         else {
             log.warn("Login failed: [{}] ([{}])", huygensPrincipal, statusCode);
         }
 
-        final URI uri = uriBuilder.build();
+        final URI uri;
+        try {
+            uri = uriBuilder.build();
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("RedirectURI does not allow session as query parameter");
+        } catch (UriBuilderException e) {
+            throw new BadRequestException("Failed to build redirect URL from redirectURI and sessionId");
+        }
+
         log.debug("Redirecting to: [{}]", uri);
         return Response.seeOther(uri).build();
     }
 
     @POST
-    @Path("/flush")
+    @Path("/purge")
     @Produces(APPLICATION_JSON)
-    public Collection<LoginRequest> flushExpiredLoginRequests() {
-        return loginManager.flushExpiredRequests();
+    public Collection<LoginRequest> purgeExpiredLoginRequests() {
+        return loginManager.purgeExpiredRequests();
     }
 
     @GET
@@ -243,14 +255,14 @@ public class SAMLResource {
         try {
             relayState = UUID.fromString(id);
         } catch (IllegalArgumentException e) {
-            log.warn("Illegal relayState (not a UUID): [{}]", id);
-            return Response.status(Status.BAD_REQUEST).build();
+            throw new BadRequestException("Illegal relayState (not a UUID): " + id);
         }
 
         final LoginRequest request = loginManager.removeLoginRequest(relayState);
         if (request == null) {
             return Response.ok().build();
         }
+
         return Response.ok(request).build();
     }
 
