@@ -118,27 +118,15 @@ public class SAMLResource {
     @GET
     @Path("/login")
     @Produces(MediaType.TEXT_HTML)
-    public Response login(@QueryParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
-        log.debug("Login request, redirectURI=[{}]", redirectURI);
+    public Response loginGET(@QueryParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
+        return login(redirectURI);
+    }
 
-        final UUID relayState = loginManager.createLoginRequest(redirectURI);
-        final String request = deflateAndBase64Encode(buildAuthnRequestObject());
-
-        UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL);
-        uriBuilder.queryParam(QUERY_PARAM_RELAY_STATE, relayState);
-        uriBuilder.queryParam(QUERY_PARAM_SAML_REQUEST, request);
-
-        /* 3.4.5.1, HTTP and Caching Considerations:
-         * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
-         * To ensure this, the following rules SHOULD be followed.
-         * When returning SAML protocol messages using HTTP 1.1, HTTP responders SHOULD:
-         * Include a Cache-Control header field set to "no-cache, no-store".
-         * Include a Pragma header field set to "no-cache".
-         */
-        return Response.seeOther(uriBuilder.build()) //
-                .header("Cache-Control", "no-cache, no-store") //
-                .header("Pragma", "no-cache") //
-                .build();
+    @POST
+    @Path("/login")
+    @Produces(MediaType.TEXT_HTML)
+    public Response loginPOST(@FormParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
+        return login(redirectURI);
     }
 
     @POST
@@ -264,6 +252,29 @@ public class SAMLResource {
         }
 
         return Response.ok(request).build();
+    }
+
+    private Response login(final URI redirectURI) throws MessageEncodingException {
+        log.debug("Login request, redirectURI=[{}]", redirectURI);
+
+        final UUID relayState = loginManager.createLoginRequest(redirectURI);
+        final String request = deflateAndBase64Encode(buildAuthnRequestObject());
+
+        UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL);
+        uriBuilder.queryParam(QUERY_PARAM_RELAY_STATE, relayState);
+        uriBuilder.queryParam(QUERY_PARAM_SAML_REQUEST, request);
+
+        /* 3.4.5.1, HTTP and Caching Considerations:
+         * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
+         * To ensure this, the following rules SHOULD be followed.
+         * When returning SAML protocol messages using HTTP 1.1, HTTP responders SHOULD:
+         * Include a Cache-Control header field set to "no-cache, no-store".
+         * Include a Pragma header field set to "no-cache".
+         */
+        return Response.seeOther(uriBuilder.build()) //
+                .header("Cache-Control", "no-cache, no-store") //
+                .header("Pragma", "no-cache") //
+                .build();
     }
 
     private HuygensSession createSession(final HuygensPrincipal huygensPrincipal) {
