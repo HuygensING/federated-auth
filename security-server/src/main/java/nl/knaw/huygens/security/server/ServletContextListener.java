@@ -87,7 +87,7 @@ public class ServletContextListener extends GuiceServletContextListener {
     }
 
     private String getRequestFilters() {
-        return getClassNames(LoggingFilter.class);
+        return getClassNames(LoggingFilter.class, BasicAuthFilter.class);
     }
 
     private String getResponseFilters() {

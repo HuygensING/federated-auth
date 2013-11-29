@@ -22,6 +22,10 @@
         login();
     } else {
     $.ajax({
+    headers: {
+//        'Authorization': 'Basic em9lZjpoYWFz'
+        'Authorization': 'Basic bWVqOm1pZXI='
+    },
     url: 'https://secure.huygens.knaw.nl/sessions/' + accessToken,
     error: function(data){
     if(data.status === 400 || data.status === 404) {

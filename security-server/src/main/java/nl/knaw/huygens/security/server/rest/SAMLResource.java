@@ -6,6 +6,8 @@ import static nl.knaw.huygens.security.core.rest.API.REDIRECT_URL_HTTP_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_ID_HTTP_PARAM;
 import static nl.knaw.huygens.security.server.saml2.SAMLEncoder.deflateAndBase64Encode;
 
+import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
@@ -107,11 +109,15 @@ public class SAMLResource {
 
     private final LoginRequestManager loginManager;
 
+    private final HttpServletRequest httpServletRequest;
+
     @Inject
-    public SAMLResource(SessionManager sessionManager, LoginRequestManager loginManager) {
+    public SAMLResource(SessionManager sessionManager, LoginRequestManager loginManager, HttpServletRequest httpServletRequest) {
         this.sessionManager = sessionManager;
         this.loginManager = loginManager;
+        this.httpServletRequest = httpServletRequest;
         log.debug("pending login request count: {}", loginManager.getPendingLoginRequestCount());
+        log.debug("httpServletRequest.remoteHost: [{}]", httpServletRequest.getRemoteHost());
     }
 
     @POST
@@ -214,6 +220,7 @@ public class SAMLResource {
     }
 
     @POST
+    @RolesAllowed("LOGIN_MANAGER")
     @Path("/purge")
     @Produces(APPLICATION_JSON)
     public Collection<LoginRequest> purgeExpiredLoginRequests() {
@@ -221,6 +228,7 @@ public class SAMLResource {
     }
 
     @GET
+    @RolesAllowed("LOGIN_MANAGER")
     @Path("/requests")
     @Produces(APPLICATION_JSON)
     public Collection<LoginRequest> getLoginRequests() {
@@ -228,6 +236,7 @@ public class SAMLResource {
     }
 
     @DELETE
+    @RolesAllowed("LOGIN_MANAGER")
     @Path("/requests/{id}")
     @Produces(APPLICATION_JSON)
     public Response removeLoginRequest(@PathParam("id") String id) {

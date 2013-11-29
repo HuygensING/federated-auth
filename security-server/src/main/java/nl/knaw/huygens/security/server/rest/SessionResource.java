@@ -4,6 +4,7 @@ import static nl.knaw.huygens.security.core.rest.API.ID_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_PATH;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_URI;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -20,6 +21,7 @@ import nl.knaw.huygens.security.server.service.SessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@RolesAllowed("SESSION_MANAGER")
 @Path(SESSION_AUTHENTICATION_URI)
 public class SessionResource {
     private static final Logger log = LoggerFactory.getLogger(SessionResource.class);
