@@ -10,6 +10,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.net.HttpHeaders;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -19,17 +20,17 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
   private final Client client;
   private final String authorizationUrl;
+  private final String basicCredentials;
 
-  public HuygensAuthorizationHandler(Client client, String authorizationUrl) {
-    checkNotNull(client);
+  public HuygensAuthorizationHandler(Client client, String authorizationUrl, String basicCredentials) {
+    this.client = checkNotNull(client);
+    this.basicCredentials = checkNotNull(basicCredentials);
     if (StringUtils.isBlank(authorizationUrl)) {
       LOG.info("Authorization url was empty");
       throw new IllegalArgumentException("Authorization url was empty");
     }
 
-    checkNotNull(authorizationUrl);
     this.authorizationUrl = authorizationUrl;
-    this.client = client;
   }
 
   @Override
@@ -47,7 +48,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     LOG.info("url: {}", resource.getURI());
 
-    ClientResponse response = resource.get(ClientResponse.class);
+    ClientResponse response = resource.header(HttpHeaders.AUTHORIZATION, "Basic " + basicCredentials).get(ClientResponse.class);
 
     switch (response.getClientResponseStatus()) {
     case NOT_FOUND:
@@ -59,7 +60,8 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
       LOG.error("Illegal session token {}.", sessionToken);
       throw new UnauthorizedException();
     default:
-      LOG.error("Unknown execption for token {}.", sessionToken);
+      LOG.error("Unknown exception for token {}.", sessionToken);
+      LOG.error("Response code is {}.", response.getClientResponseStatus());
       throw new UnauthorizedException();
     }
 
