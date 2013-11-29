@@ -14,7 +14,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -113,13 +112,6 @@ public class SAMLResource {
         this.sessionManager = sessionManager;
         this.loginManager = loginManager;
         log.debug("pending login request count: {}", loginManager.getPendingLoginRequestCount());
-    }
-
-    @GET
-    @Path("/login")
-    @Produces(MediaType.TEXT_HTML)
-    public Response loginGET(@QueryParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
-        return login(redirectURI);
     }
 
     @POST
