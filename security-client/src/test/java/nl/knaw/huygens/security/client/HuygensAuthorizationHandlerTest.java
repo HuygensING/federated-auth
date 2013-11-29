@@ -89,6 +89,15 @@ public class HuygensAuthorizationHandlerTest {
   public void testGetSecurityInformationIllegalSessionToken() throws UnauthorizedException {
     ClientResponse response = mock(ClientResponse.class);
     when(response.getClientResponseStatus()).thenReturn(Status.BAD_REQUEST);
+    setUpClient(response);
+
+    instance.getSecurityInformation(DEFAULT_SESSION_ID);
+  }
+
+  @Test(expected = UnauthorizedException.class)
+  public void testGetSecurityInformationWrongCredentials() throws UnauthorizedException {
+    ClientResponse response = mock(ClientResponse.class);
+    when(response.getClientResponseStatus()).thenReturn(Status.FORBIDDEN);
 
     setUpClient(response);
 
