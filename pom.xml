@@ -256,7 +256,7 @@
         <!-- library / plugin versions -->
         <annotation-api.version>1.2</annotation-api.version>
         <classloader-leak-prevention.version>1.8.1</classloader-leak-prevention.version>
-        <com.fasterxml.jackson-version>2.2.3</com.fasterxml.jackson-version>
+        <com.fasterxml.jackson-version>2.3.0</com.fasterxml.jackson-version>
         <guava.version>15.0</guava.version>
         <guice.version>3.0</guice.version>
         <jersey.version>1.17.1</jersey.version>

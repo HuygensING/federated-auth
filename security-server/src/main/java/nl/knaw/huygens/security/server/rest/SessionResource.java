@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.UUID;
 
 import com.google.inject.Inject;
-import nl.knaw.huygens.security.core.model.HuygensSession;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import nl.knaw.huygens.security.server.service.SessionService;
@@ -56,7 +55,7 @@ public class SessionResource {
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_VIEWER)
-    public HuygensSession getSession(@PathParam(ID_PARAM) String id) {
+    public ServerSession getSession(@PathParam(ID_PARAM) String id) {
         log.debug("READ session: [{}]", id);
         return sessionService.getSession(parseSessionID(id));
     }
@@ -65,7 +64,7 @@ public class SessionResource {
     @Path(SESSION_AUTHENTICATION_PATH + "/refresh")
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)
-    public HuygensSession refreshSession(@PathParam(ID_PARAM) String id) {
+    public ServerSession refreshSession(@PathParam(ID_PARAM) String id) {
         log.debug("REFRESH session: [{}]", id);
         final UUID sessionId = parseSessionID(id);
         return sessionService.refreshSession(sessionId);
@@ -75,7 +74,7 @@ public class SessionResource {
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)
-    public HuygensSession destroySession(@PathParam(ID_PARAM) String id) {
+    public ServerSession destroySession(@PathParam(ID_PARAM) String id) {
         log.debug("DESTROY session: [{}]", id);
         return sessionService.destroySession(parseSessionID(id));
     }
