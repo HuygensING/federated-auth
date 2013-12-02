@@ -12,7 +12,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Singleton;
 import com.sun.jersey.api.NotFoundException;
-import nl.knaw.huygens.security.core.model.HuygensSession;
 import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import org.slf4j.Logger;
@@ -34,7 +33,7 @@ public class SessionService {
         return sessions.values();
     }
 
-    public HuygensSession getSession(UUID sessionId) {
+    public ServerSession getSession(UUID sessionId) {
         log.debug("Getting session: [{}]", sessionId);
 
         return findSession(sessionId);
@@ -45,7 +44,7 @@ public class SessionService {
         sessions.put(session.getId(), session);
     }
 
-    public HuygensSession refreshSession(UUID sessionId) {
+    public ServerSession refreshSession(UUID sessionId) {
         log.debug("Refreshing session: [{}]", sessionId);
         final ServerSession session = findSession(sessionId);
 
@@ -58,7 +57,7 @@ public class SessionService {
         return session;
     }
 
-    public HuygensSession destroySession(UUID sessionId) {
+    public ServerSession destroySession(UUID sessionId) {
         log.debug("Destroying session: [{}]", sessionId);
         final ServerSession session = findSession(sessionId);
 
