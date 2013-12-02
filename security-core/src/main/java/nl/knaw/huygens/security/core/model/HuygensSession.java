@@ -2,7 +2,7 @@ package nl.knaw.huygens.security.core.model;
 
 import java.util.UUID;
 
-public interface SecuritySession {
+public interface HuygensSession {
 
   UUID getId();
 

@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 import java.util.EnumSet;
 import java.util.UUID;
 
+import javax.ws.rs.core.HttpHeaders;
+
 import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
 import nl.knaw.huygens.security.core.model.Affiliation;
@@ -21,6 +23,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.WebResource.Builder;
 
 public class HuygensAuthorizationHandlerTest {
   private static final String AUTHORIZATION_URL = "http://localhost:9000";
@@ -32,13 +35,14 @@ public class HuygensAuthorizationHandlerTest {
   private static final String EMAIL = "john@doe.com";
   private static final String NAME = "John Doe";
   private static final EnumSet<Affiliation> AFFILIATIONS = EnumSet.of(Affiliation.employee);
+  private static final String CREDENTIALS = "9aweh80opgf";
   private Client client;
   private HuygensAuthorizationHandler instance;
 
   @Before
   public void setUp() {
     client = mock(Client.class);
-    instance = new HuygensAuthorizationHandler(client, AUTHORIZATION_URL);
+    instance = new HuygensAuthorizationHandler(client, AUTHORIZATION_URL, CREDENTIALS);
   }
 
   @After
@@ -85,6 +89,15 @@ public class HuygensAuthorizationHandlerTest {
   public void testGetSecurityInformationIllegalSessionToken() throws UnauthorizedException {
     ClientResponse response = mock(ClientResponse.class);
     when(response.getClientResponseStatus()).thenReturn(Status.BAD_REQUEST);
+    setUpClient(response);
+
+    instance.getSecurityInformation(DEFAULT_SESSION_ID);
+  }
+
+  @Test(expected = UnauthorizedException.class)
+  public void testGetSecurityInformationWrongCredentials() throws UnauthorizedException {
+    ClientResponse response = mock(ClientResponse.class);
+    when(response.getClientResponseStatus()).thenReturn(Status.FORBIDDEN);
 
     setUpClient(response);
 
@@ -92,11 +105,16 @@ public class HuygensAuthorizationHandlerTest {
   }
 
   private void setUpClient(ClientResponse response) {
+    Builder builder = mock(Builder.class);
+    when(builder.get(ClientResponse.class)).thenReturn(response);
+
     WebResource resource = mock(WebResource.class);
     when(resource.path(DEFAULT_SESSION_ID)).thenReturn(resource);
     when(resource.path(API.SESSION_AUTHENTICATION_URI)).thenReturn(resource);
+    when(resource.header(HttpHeaders.AUTHORIZATION, "Basic " + CREDENTIALS)).thenReturn(builder);
+
     when(client.resource(AUTHORIZATION_URL)).thenReturn(resource);
-    when(resource.get(ClientResponse.class)).thenReturn(response);
+
   }
 
   private ClientSession createSecuritySession() {

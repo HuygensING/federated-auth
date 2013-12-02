@@ -4,7 +4,7 @@
 
     <groupId>nl.knaw.huygens</groupId>
     <artifactId>security</artifactId>
-    <version>2.0.1</version>
+    <version>2.1.0</version>
     <name>Security</name>
     <packaging>pom</packaging>
     <description>Contains all the classes that have something to do with securing a Jersey rest service.</description>
@@ -72,6 +72,17 @@
                 <version>2.1</version>
             </plugin>
         </plugins>
+
+        <resources>
+            <!-- todo: check if this potentially harms files in 'certificates' subdirectory
+                 We would not want arbitrary substitutions in certificate files
+             -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
     </build>
 
     <dependencies>
@@ -110,7 +121,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-json-provider</artifactId>
-            <version>${fasterxml.version}</version>
+            <version>${com.fasterxml.jackson-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <version>${com.fasterxml.jackson-version}</version>
         </dependency>
 
         <!-- Jersey -->
@@ -227,6 +243,10 @@
     </distributionManagement>
 
     <properties>
+        <!-- setup timestamp for substitution in build.properties -->
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
+
         <!-- JDK source and target compliancy level -->
         <jdk.version>1.6</jdk.version>
 
@@ -236,7 +256,7 @@
         <!-- library / plugin versions -->
         <annotation-api.version>1.2</annotation-api.version>
         <classloader-leak-prevention.version>1.8.1</classloader-leak-prevention.version>
-        <fasterxml.version>2.2.2</fasterxml.version>
+        <com.fasterxml.jackson-version>2.2.3</com.fasterxml.jackson-version>
         <guava.version>15.0</guava.version>
         <guice.version>3.0</guice.version>
         <jersey.version>1.17.1</jersey.version>
