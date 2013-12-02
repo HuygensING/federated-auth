@@ -6,11 +6,14 @@ import javax.ws.rs.core.SecurityContext;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Properties;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
+import nl.knaw.huygens.security.server.util.PropertiesHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,25 +24,45 @@ public class BasicAuthFilter implements ContainerRequestFilter {
 
     public BasicAuthFilter() {
         log.debug("BasicAuthFilter created");
-        rolesByAuth = Maps.newHashMap();
-        rolesByAuth.put("Basic Ym9sa2U6YmVlcg==", ImmutableSet.of("LOGIN_MANAGER")); // "bolke:beer"
-        rolesByAuth.put("Basic em9lZjpoYWFz", ImmutableSet.of("SESSION_MANAGER")); // "zoef:haas"
-        rolesByAuth.put("Basic bWVqOm1pZXI=", ImmutableSet.of("LOGIN_MANAGER", "SESSION_MANAGER")); // "mej:mier"
+        rolesByAuth = readRoles();
     }
 
     @Override
     public ContainerRequest filter(ContainerRequest request) {
+        log.debug("securityContext: {}", request.getSecurityContext());
+        log.debug("authScheme={}, isSecure={}", request.getAuthenticationScheme(), request.isSecure());
+
         final String auth = request.getHeaderValue(AUTHORIZATION);
-        log.debug("auth: [{}]", auth);
-        final Collection<String> roles = rolesByAuth.get(auth);
-        if (roles != null) {
-            request.setSecurityContext(createSecurityContext(request, roles));
+        if (auth != null) {
+            final Collection<String> roles = rolesByAuth.get(auth);
+            if (roles != null) {
+                request.setSecurityContext(createSecurityContext(request, roles));
+            }
         }
+
         return request;
     }
 
-    private SecurityContext createSecurityContext(final ContainerRequest request, final Collection<String> roles) {
-        log.debug("creating LOGIN_MANAGER security context");
+    private Map<String, Collection<String>> readRoles() {
+        final Map<String, Collection<String>> authRoles = Maps.newHashMap();
+
+        log.debug("Reading authorization roles");
+        final Properties authProperties = PropertiesHelper.getAuthProperties();
+        final Splitter commaSplitter = Splitter.on(',').trimResults().omitEmptyStrings();
+        for (String profile : commaSplitter.split(authProperties.getProperty("profiles"))) {
+            final String authProp = authProperties.getProperty(profile + ".auth");
+            final String rolesProp = authProperties.getProperty(profile + ".roles");
+            final ImmutableSet<String> roles = ImmutableSet.copyOf(commaSplitter.split(rolesProp));
+            log.debug("Auth profile [{}] has roles: {}", profile, roles);
+            authRoles.put(authProp, roles);
+        }
+
+        return authRoles;
+    }
+
+    private final SecurityContext createSecurityContext(final ContainerRequest request,
+                                                        final Collection<String> roles) {
+        log.debug("Creating {} security context with roles: {}", request.getAuthenticationScheme(), roles);
 
         return new SecurityContext() {
             @Override

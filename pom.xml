@@ -72,6 +72,17 @@
                 <version>2.1</version>
             </plugin>
         </plugins>
+
+        <resources>
+            <!-- todo: check if this potentially harms files in 'certificates' subdirectory
+                 We would not want arbitrary substitutions in certificate files
+             -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
     </build>
 
     <dependencies>
@@ -232,6 +243,10 @@
     </distributionManagement>
 
     <properties>
+        <!-- setup timestamp for substitution in build.properties -->
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
+
         <!-- JDK source and target compliancy level -->
         <jdk.version>1.6</jdk.version>
 

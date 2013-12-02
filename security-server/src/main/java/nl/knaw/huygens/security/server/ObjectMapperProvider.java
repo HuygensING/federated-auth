@@ -10,8 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Provider
-public class SecurityObjectMapperProvider implements ContextResolver<ObjectMapper> {
-    private static final Logger log = LoggerFactory.getLogger(SecurityObjectMapperProvider.class);
+public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
+    private static final Logger log = LoggerFactory.getLogger(ObjectMapperProvider.class);
 
     @Override
     public ObjectMapper getContext(Class<?> type) {
