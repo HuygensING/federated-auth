@@ -29,9 +29,6 @@ public class BasicAuthFilter implements ContainerRequestFilter {
 
     @Override
     public ContainerRequest filter(ContainerRequest request) {
-        log.debug("securityContext: {}", request.getSecurityContext());
-        log.debug("authScheme={}, isSecure={}", request.getAuthenticationScheme(), request.isSecure());
-
         final String auth = request.getHeaderValue(AUTHORIZATION);
         if (auth != null) {
             final Collection<String> roles = rolesByAuth.get(auth);
@@ -62,7 +59,7 @@ public class BasicAuthFilter implements ContainerRequestFilter {
 
     private final SecurityContext createSecurityContext(final ContainerRequest request,
                                                         final Collection<String> roles) {
-        log.debug("Creating {} security context with roles: {}", request.getAuthenticationScheme(), roles);
+        log.debug("Creating security context with roles: {}", roles);
 
         return new SecurityContext() {
             @Override

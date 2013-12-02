@@ -21,19 +21,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-public class LoginRequestManager {
+public class LoginService {
     private static final String MSG_MISSING_HOST_IN_REDIRECT_URI = "Malformed redirect URI (no host)";
 
     private static final String MSG_MISSING_SCHEME_IN_REDIRECT_URI = "Redirect URI not absolute (missing scheme)";
 
     private static final String MSG_MALFORMED_REDIRECT_URI = "Malformed redirectURI (unknown protocol)";
 
-    private static final Logger log = LoggerFactory.getLogger(LoginRequestManager.class);
+    private static final Logger log = LoggerFactory.getLogger(LoginService.class);
 
     private final Map<UUID, LoginRequest> loginRequestsByRelayState;
 
-    public LoginRequestManager() {
-        log.debug("LoginRequestManager created");
+    public LoginService() {
+        log.debug("LoginService created");
         loginRequestsByRelayState = Maps.newHashMap();
     }
 
@@ -82,10 +82,6 @@ public class LoginRequestManager {
         return loginRequest;
     }
 
-    public int getPendingLoginRequestCount() {
-        return loginRequestsByRelayState.size();
-    }
-
     public Collection<LoginRequest> getPendingLoginRequests() {
         return loginRequestsByRelayState.values();
     }
@@ -100,7 +96,7 @@ public class LoginRequestManager {
             if (loginRequest.isExpired()) {
                 log.debug("Purging: [{}]", loginRequest.getRelayState());
                 purged.add(loginRequest);
-                iter.remove(); // iteration safe removal from underlying 'loginRequestsByRelayState' collection.
+                iter.remove(); // iteration safe removal from underlying collection.
             }
         }
 
