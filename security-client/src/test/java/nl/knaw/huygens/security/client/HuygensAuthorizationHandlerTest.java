@@ -35,7 +35,7 @@ public class HuygensAuthorizationHandlerTest {
   private static final String EMAIL = "john@doe.com";
   private static final String NAME = "John Doe";
   private static final EnumSet<Affiliation> AFFILIATIONS = EnumSet.of(Affiliation.employee);
-  private static final String CREDENTIALS = "9aweh80opgf";
+  private static final String CREDENTIALS = "Huygens 9aweh80opgf";
   private Client client;
   private HuygensAuthorizationHandler instance;
 
@@ -111,7 +111,7 @@ public class HuygensAuthorizationHandlerTest {
     WebResource resource = mock(WebResource.class);
     when(resource.path(DEFAULT_SESSION_ID)).thenReturn(resource);
     when(resource.path(API.SESSION_AUTHENTICATION_URI)).thenReturn(resource);
-    when(resource.header(HttpHeaders.AUTHORIZATION, "Basic " + CREDENTIALS)).thenReturn(builder);
+    when(resource.header(HttpHeaders.AUTHORIZATION, CREDENTIALS)).thenReturn(builder);
 
     when(client.resource(AUTHORIZATION_URL)).thenReturn(resource);
 
