@@ -48,7 +48,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     LOG.info("url: {}", resource.getURI());
 
-    ClientResponse response = resource.header(HttpHeaders.AUTHORIZATION, "Basic " + basicCredentials).get(ClientResponse.class);
+    ClientResponse response = resource.header(HttpHeaders.AUTHORIZATION, basicCredentials).get(ClientResponse.class);
 
     switch (response.getClientResponseStatus()) {
     case NOT_FOUND:
