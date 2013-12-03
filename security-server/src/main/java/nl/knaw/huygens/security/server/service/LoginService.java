@@ -17,6 +17,7 @@ import com.google.inject.Singleton;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.MissingParameterException;
 import nl.knaw.huygens.security.server.model.LoginRequest;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +33,12 @@ public class LoginService {
 
     private final Map<UUID, LoginRequest> loginRequestsByRelayState;
 
+    private DateTime nextPurge;
+
     public LoginService() {
         log.debug("LoginService created");
         loginRequestsByRelayState = Maps.newHashMap();
+        nextPurge = DateTime.now().plusMinutes(1);
     }
 
     public UUID createLoginRequest(final URI redirectURI) {
@@ -67,6 +71,11 @@ public class LoginService {
 
     private void addLoginRequest(LoginRequest loginRequest) {
         log.debug("Adding login request: [{}]", loginRequest);
+
+        if (nextPurge.isBeforeNow()) {
+            purgeExpiredRequests();
+        }
+
         loginRequestsByRelayState.put(loginRequest.getRelayState(), loginRequest);
     }
 
@@ -99,6 +108,8 @@ public class LoginService {
                 iter.remove(); // iteration safe removal from underlying collection.
             }
         }
+
+        nextPurge = DateTime.now().plusMinutes(5);
 
         return purged;
     }

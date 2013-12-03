@@ -11,18 +11,15 @@ public class ServerSessionImpl implements ServerSession {
 
     private final HuygensPrincipal owner;
 
-    private DateTime expiresAt;
-
     private boolean destroyed;
+
+    @JsonIgnore
+    private DateTime expiresAt;
 
     public ServerSessionImpl(HuygensPrincipal owner) {
         this.id = UUID.randomUUID();
-        this.expiresAt = createExpiry();
         this.owner = owner;
-    }
-
-    private static DateTime createExpiry() {
-        return new DateTime().plusMinutes(60);
+        refresh();
     }
 
     @Override
@@ -36,8 +33,14 @@ public class ServerSessionImpl implements ServerSession {
     }
 
     @Override
-    public DateTime getExpiresAt() {
-        return expiresAt;
+    public void destroy() {
+        destroyed = true;
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isDestroyed() {
+        return destroyed;
     }
 
     @JsonIgnore
@@ -48,17 +51,6 @@ public class ServerSessionImpl implements ServerSession {
 
     @Override
     public void refresh() {
-        expiresAt = createExpiry();
-    }
-
-    @Override
-    public void destroy() {
-        destroyed = true;
-    }
-
-    @JsonIgnore
-    @Override
-    public boolean isDestroyed() {
-        return destroyed;
+        expiresAt = new DateTime().plusMinutes(60);
     }
 }

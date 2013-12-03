@@ -14,6 +14,7 @@ import com.google.inject.Singleton;
 import com.sun.jersey.api.NotFoundException;
 import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +24,12 @@ public class SessionService {
 
     private final Map<UUID, ServerSession> sessions;
 
+    private DateTime nextPurge;
+
     public SessionService() {
         log.debug("SessionService created");
         sessions = Maps.newHashMap();
+        nextPurge = DateTime.now().plusMinutes(1);
     }
 
     public Collection<ServerSession> getSessions() {
@@ -41,6 +45,11 @@ public class SessionService {
 
     public void addSession(ServerSession session) {
         log.debug("Adding session: [{}]", session.getId());
+
+        if (nextPurge.isBeforeNow()) {
+            purge();
+        }
+
         sessions.put(session.getId(), session);
     }
 
@@ -71,7 +80,7 @@ public class SessionService {
     }
 
     public Collection<ServerSession> purge() {
-        log.debug("Purging expired and destroyed sessions");
+        log.debug("Purging stale sessions");
         List<ServerSession> purged = Lists.newArrayList();
 
         for (final Iterator<ServerSession> iter = sessions.values().iterator(); iter.hasNext(); ) {
@@ -82,6 +91,9 @@ public class SessionService {
                 iter.remove(); // iteration safe removal from underlying collection.
             }
         }
+
+        nextPurge = DateTime.now().plusMinutes(5);
+        log.debug("Next purge after: [{}]", nextPurge);
 
         return purged;
     }

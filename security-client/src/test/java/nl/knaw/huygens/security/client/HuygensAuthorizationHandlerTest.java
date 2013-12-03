@@ -18,7 +18,6 @@ import nl.knaw.huygens.security.client.model.SecurityInformation;
 import nl.knaw.huygens.security.core.model.Affiliation;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 import nl.knaw.huygens.security.core.rest.API;
-import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -125,12 +124,7 @@ public class HuygensAuthorizationHandlerTest {
         return principal;
       }
 
-        @Override
-        public DateTime getExpiresAt() {
-            return null;
-        }
-
-        @Override
+      @Override
       public UUID getId() {
         return UUID.randomUUID();
       }
