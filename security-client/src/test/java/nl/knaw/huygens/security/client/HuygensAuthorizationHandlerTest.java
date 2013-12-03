@@ -4,26 +4,23 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import javax.ws.rs.core.HttpHeaders;
 import java.util.EnumSet;
 import java.util.UUID;
-
-import javax.ws.rs.core.HttpHeaders;
-
-import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
-import nl.knaw.huygens.security.client.model.SecurityInformation;
-import nl.knaw.huygens.security.core.model.Affiliation;
-import nl.knaw.huygens.security.core.model.HuygensPrincipal;
-import nl.knaw.huygens.security.core.rest.API;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
+import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
+import nl.knaw.huygens.security.client.model.SecurityInformation;
+import nl.knaw.huygens.security.core.model.Affiliation;
+import nl.knaw.huygens.security.core.model.HuygensPrincipal;
+import nl.knaw.huygens.security.core.rest.API;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class HuygensAuthorizationHandlerTest {
   private static final String AUTHORIZATION_URL = "http://localhost:9000";
@@ -122,7 +119,6 @@ public class HuygensAuthorizationHandlerTest {
     final HuygensPrincipal principal = createSecurityPrincipal();
 
     ClientSession session = new ClientSession() {
-
       @Override
       public HuygensPrincipal getOwner() {
         return principal;

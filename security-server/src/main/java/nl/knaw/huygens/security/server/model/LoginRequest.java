@@ -5,8 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.net.URI;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.base.Objects;
 import org.joda.time.DateTime;
 
@@ -31,19 +29,17 @@ public class LoginRequest {
         return redirectURI;
     }
 
-    public DateTime getExpiresAt() {
-        return expiresAt;
-    }
-
     public boolean isExpired() {
         return expiresAt.isBeforeNow();
     }
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)//
-                .add("relayState", relayState)//
-                .add("redirectURI", redirectURI)//
-                .add("expiresAt", expiresAt).toString();
+        return Objects.toStringHelper(this) //
+                .add("relayState", relayState) //
+                .add("redirectURI", redirectURI) //
+                .add("expiresAt", expiresAt) //
+                .add("isExpired", isExpired()) //
+                .toString();
     }
 }

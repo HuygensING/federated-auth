@@ -4,10 +4,10 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static nl.knaw.huygens.security.core.rest.API.REDIRECT_URL_HTTP_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_ID_HTTP_PARAM;
+import static nl.knaw.huygens.security.server.Roles.LOGIN_MANAGER;
 import static nl.knaw.huygens.security.server.saml2.SAMLEncoder.deflateAndBase64Encode;
 
 import javax.annotation.security.RolesAllowed;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
@@ -45,12 +45,13 @@ import java.util.UUID;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
-import nl.knaw.huygens.security.core.model.HuygensSession;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.model.LoginRequest;
+import nl.knaw.huygens.security.server.model.ServerSession;
+import nl.knaw.huygens.security.server.model.ServerSessionImpl;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
-import nl.knaw.huygens.security.server.service.LoginRequestManager;
-import nl.knaw.huygens.security.server.service.SessionManager;
+import nl.knaw.huygens.security.server.service.LoginService;
+import nl.knaw.huygens.security.server.service.SessionService;
 import org.joda.time.DateTime;
 import org.opensaml.Configuration;
 import org.opensaml.common.SAMLVersion;
@@ -105,19 +106,14 @@ public class SAMLResource {
 
     private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
-    private final SessionManager sessionManager;
+    private final SessionService sessionService;
 
-    private final LoginRequestManager loginManager;
-
-    private final HttpServletRequest httpServletRequest;
+    private final LoginService loginManager;
 
     @Inject
-    public SAMLResource(SessionManager sessionManager, LoginRequestManager loginManager, HttpServletRequest httpServletRequest) {
-        this.sessionManager = sessionManager;
+    public SAMLResource(SessionService sessionService, LoginService loginManager) {
+        this.sessionService = sessionService;
         this.loginManager = loginManager;
-        this.httpServletRequest = httpServletRequest;
-        log.debug("pending login request count: {}", loginManager.getPendingLoginRequestCount());
-        log.debug("httpServletRequest.remoteHost: [{}]", httpServletRequest.getRemoteHost());
     }
 
     @POST
@@ -194,13 +190,13 @@ public class SAMLResource {
         final UriBuilder uriBuilder = UriBuilder.fromUri(loginRequest.getRedirectURI());
         if (SAML_SUCCESS.equals(statusCode)) {
             log.debug("Login successful: [{}]", huygensPrincipal);
-            final HuygensSession session = createSession(huygensPrincipal);
+            final ServerSession session = new ServerSessionImpl(huygensPrincipal);
             try {
                 uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException("Unable to append query parameter to redirectURI");
             }
-            sessionManager.addSession(session);
+            sessionService.addSession(session);
         }
         else {
             log.warn("Login failed: [{}] ([{}])", huygensPrincipal, statusCode);
@@ -220,7 +216,7 @@ public class SAMLResource {
     }
 
     @POST
-    @RolesAllowed("LOGIN_MANAGER")
+    @RolesAllowed(LOGIN_MANAGER)
     @Path("/purge")
     @Produces(APPLICATION_JSON)
     public Collection<LoginRequest> purgeExpiredLoginRequests() {
@@ -228,7 +224,7 @@ public class SAMLResource {
     }
 
     @GET
-    @RolesAllowed("LOGIN_MANAGER")
+    @RolesAllowed(LOGIN_MANAGER)
     @Path("/requests")
     @Produces(APPLICATION_JSON)
     public Collection<LoginRequest> getLoginRequests() {
@@ -236,7 +232,7 @@ public class SAMLResource {
     }
 
     @DELETE
-    @RolesAllowed("LOGIN_MANAGER")
+    @RolesAllowed(LOGIN_MANAGER)
     @Path("/requests/{id}")
     @Produces(APPLICATION_JSON)
     public Response removeLoginRequest(@PathParam("id") String id) {
@@ -276,22 +272,6 @@ public class SAMLResource {
                 .header("Cache-Control", "no-cache, no-store") //
                 .header("Pragma", "no-cache") //
                 .build();
-    }
-
-    private HuygensSession createSession(final HuygensPrincipal huygensPrincipal) {
-        return new HuygensSession() {
-            private final UUID hsid = UUID.randomUUID();
-
-            @Override
-            public UUID getId() {
-                return hsid;
-            }
-
-            @Override
-            public HuygensPrincipal getOwner() {
-                return huygensPrincipal;
-            }
-        };
     }
 
     private void verify(Signature signature) {
