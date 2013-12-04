@@ -166,9 +166,9 @@ public class SAMLResourceTest {
         when(loginService.removeLoginRequest(relayState)).thenReturn(testLoginRequest);
         final Response response = sut.consumeAssertion(getSAMLResponse(), relayState.toString());
         assertEquals(303, response.getStatus());
-        final URI loactionURI = (URI) response.getMetadata().getFirst("Location");
-        log.debug("Location: {}", loactionURI);
-        final String location = loactionURI.toString();
+        final URI locationURI = (URI) response.getMetadata().getFirst("Location");
+        log.debug("Location: {}", locationURI);
+        final String location = locationURI.toString();
         assertTrue(location.startsWith(testLoginRequest.getRedirectURI().toString()));
         assertTrue(location.contains(API.SESSION_ID_HTTP_PARAM + '='));
     }
