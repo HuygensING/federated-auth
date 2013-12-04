@@ -8,8 +8,10 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 import org.opensaml.Configuration;
+import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
+import org.opensaml.xml.ConfigurationException;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.io.Marshaller;
 import org.opensaml.xml.io.MarshallingException;
@@ -22,7 +24,17 @@ import org.w3c.dom.Element;
 public class SAMLEncoder {
     private static final Logger log = LoggerFactory.getLogger(SAMLEncoder.class);
 
-    public static String deflateAndBase64Encode(SAMLObject message) throws MessageEncodingException {
+    public SAMLEncoder() {
+        log.debug("SAMLEncoder created");
+        try {
+            log.info("Bootstrapping OpenSAML library");
+            DefaultBootstrap.bootstrap();
+        } catch (ConfigurationException e) {
+            log.error("Unable to bootstrap OpenSAML library");
+        }
+    }
+
+    public String deflateAndBase64Encode(SAMLObject message) throws MessageEncodingException {
         log.trace("Deflating and Base64 encoding SAML message");
         String messageStr = XMLHelper.nodeToString(marshallMessage(message));
 
@@ -40,7 +52,7 @@ public class SAMLEncoder {
         return Base64.encodeBytes(byteArrayOutputStream.toByteArray(), Base64.DONT_BREAK_LINES);
     }
 
-    private static Element marshallMessage(XMLObject message) throws MessageEncodingException {
+    private Element marshallMessage(XMLObject message) throws MessageEncodingException {
         log.trace("Marshalling message");
         try {
             Marshaller marshaller = Configuration.getMarshallerFactory().getMarshaller(message);

@@ -117,6 +117,7 @@
             <version>${log4j.version}</version>
         </dependency>
 
+
         <!-- Faster XML -->
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
@@ -177,6 +178,12 @@
             <groupId>org.opensaml</groupId>
             <artifactId>opensaml</artifactId>
             <version>${opensaml.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Classloader leak prevention -->
