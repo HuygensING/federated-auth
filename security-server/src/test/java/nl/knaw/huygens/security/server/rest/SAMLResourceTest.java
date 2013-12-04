@@ -44,12 +44,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SAMLResourceTest {
-    private static final Logger log = LoggerFactory.getLogger(SAMLResourceTest.class);
-
     private final URI testURI;
 
     private final UUID testRelayState;
@@ -167,7 +163,6 @@ public class SAMLResourceTest {
         final Response response = sut.consumeAssertion(getSAMLResponse(), relayState.toString());
         assertEquals(303, response.getStatus());
         final URI locationURI = (URI) response.getMetadata().getFirst("Location");
-        log.debug("Location: {}", locationURI);
         final String location = locationURI.toString();
         assertTrue(location.startsWith(testLoginRequest.getRedirectURI().toString()));
         assertTrue(location.contains(API.SESSION_ID_HTTP_PARAM + '='));
