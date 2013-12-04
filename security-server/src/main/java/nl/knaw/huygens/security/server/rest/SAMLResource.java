@@ -1,7 +1,8 @@
 package nl.knaw.huygens.security.server.rest;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static nl.knaw.huygens.security.core.rest.API.REDIRECT_URL_HTTP_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_ID_HTTP_PARAM;
 import static nl.knaw.huygens.security.server.Roles.LOGIN_MANAGER;
@@ -15,7 +16,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriBuilderException;
@@ -28,7 +28,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -122,7 +121,7 @@ public class SAMLResource {
 
     @POST
     @Path("/login")
-    @Produces(MediaType.TEXT_HTML)
+    @Produces(TEXT_HTML)
     public Response requestLogin(@FormParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
         log.debug("Login request, redirectURI=[{}]", redirectURI);
 
@@ -152,8 +151,8 @@ public class SAMLResource {
 
     @POST
     @Path("/acs")  // Part of the SURFconext contract -- Thou shalt not change this path!
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(APPLICATION_FORM_URLENCODED)
+    @Produces(TEXT_HTML)
     public Response consumeAssertion(@FormParam(QUERY_PARAM_SAML_RESPONSE) String samlResponseParam,
                                      @FormParam(QUERY_PARAM_RELAY_STATE) String relayStateParam) {
         log.trace("consumeAssertion: RelayState={}, SAMLResponse={}", relayStateParam, samlResponseParam);
@@ -177,8 +176,7 @@ public class SAMLResource {
 
         final LoginRequest loginRequest = loginService.removeLoginRequest(relayState);
         if (loginRequest == null) {
-            log.warn(MSG_UNKNOWN_RELAY_STATE);
-            return Response.status(NOT_FOUND).entity(MSG_UNKNOWN_RELAY_STATE).build();
+            throw new NotFoundException(MSG_UNKNOWN_RELAY_STATE);
         }
 
         String samlResponse = new String(Base64.decode(samlResponseParam));
@@ -246,8 +244,8 @@ public class SAMLResource {
     @RolesAllowed(LOGIN_MANAGER)
     @Path("/purge")
     @Produces(APPLICATION_JSON)
-    public Collection<LoginRequest> purgeExpiredLoginRequests() {
-        return loginService.purgeExpiredRequests();
+    public Response purgeExpiredLoginRequests() {
+        return Response.ok(loginService.purgeExpiredRequests()).build();
     }
 
     @GET
@@ -306,8 +304,6 @@ public class SAMLResource {
             log.warn("Signature Validation Exception: {}", e.getMessage());
         } catch (CertificateException e) {
             log.warn("CertificateException: {}", e.getMessage());
-        } catch (URISyntaxException e) {
-            log.warn("URISyntaxException: {}", e.getMessage());
         } catch (FileNotFoundException e) {
             log.warn("Certificate file not found: {}", e.getMessage());
         } catch (NoSuchAlgorithmException e) {
@@ -317,11 +313,12 @@ public class SAMLResource {
         }
     }
 
-    private File getCertFile() throws URISyntaxException {
-        final ClassLoader classLoader = getClass().getClassLoader();
-        final URL resource = classLoader.getResource(RES_SURFCONEXT_CERT);
-        log.trace("getCertFile: resource={}", resource);
-        return new File(resource.toURI());
+    private File getCertFile() {
+//        final ClassLoader classLoader = getClass().getClassLoader();
+//        final URL resource = classLoader.getResource(RES_SURFCONEXT_CERT);
+//        return new File(resource.toURI());
+        final URL url = getClass().getResource(RES_SURFCONEXT_CERT);
+        return new File(url.getFile());
     }
 
     private AuthnRequest buildAuthnRequestObject() {
