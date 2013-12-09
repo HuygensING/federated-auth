@@ -14,11 +14,14 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.UUID;
 
 import com.google.inject.Inject;
+import com.sun.jersey.api.NotFoundException;
 import nl.knaw.huygens.security.server.BadRequestException;
+import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import nl.knaw.huygens.security.server.service.SessionService;
 import org.slf4j.Logger;
@@ -35,12 +38,8 @@ public class SessionResource {
         this.sessionService = sessionService;
     }
 
-    private static UUID parseSessionID(String input) {
-        try {
-            return UUID.fromString(input);
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Session id '" + ID_PARAM + "' is not a valid UUID: " + input);
-        }
+    private static Response ok(Object entity) {
+        return Response.ok(entity).build();
     }
 
     @GET
@@ -54,37 +53,62 @@ public class SessionResource {
     @GET
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed(SESSION_VIEWER)
-    public ServerSession getSession(@PathParam(ID_PARAM) String id) {
-        log.debug("READ session: [{}]", id);
-        return sessionService.getSession(parseSessionID(id));
+    @RolesAllowed({SESSION_MANAGER, SESSION_VIEWER})
+    public Response getSession(@PathParam(ID_PARAM) String input) {
+        log.debug("READ session: [{}]", input);
+        return ok(findSession(input));
     }
 
     @POST
     @Path(SESSION_AUTHENTICATION_PATH + "/refresh")
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)
-    public ServerSession refreshSession(@PathParam(ID_PARAM) String id) {
-        log.debug("REFRESH session: [{}]", id);
-        final UUID sessionId = parseSessionID(id);
-        return sessionService.refreshSession(sessionId);
+    public Response refreshSession(@PathParam(ID_PARAM) String input) {
+        log.debug("REFRESH session: [{}]", input);
+        return ok(sessionService.refreshSession(findSession(input)));
     }
 
     @DELETE
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)
-    public ServerSession destroySession(@PathParam(ID_PARAM) String id) {
-        log.debug("DESTROY session: [{}]", id);
-        return sessionService.destroySession(parseSessionID(id));
+    public Response destroySession(@PathParam(ID_PARAM) String input) {
+        log.debug("DESTROY session: [{}]", input);
+        return ok(sessionService.destroySession(findSession(input)));
     }
 
     @POST
     @Path("/purge")
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)
-    public Collection<ServerSession> purge() {
+    public Response purge() {
         log.debug("Purging sessions");
-        return sessionService.purge();
+        return ok(sessionService.purge());
     }
+
+    private ServerSession findSession(String id) {
+        final UUID sessionId;
+        try {
+            sessionId = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Session id '" + ID_PARAM + "' is not a valid UUID: " + id);
+        }
+
+        final ServerSession session = sessionService.getSession(sessionId);
+
+        if (session == null) {
+            throw new NotFoundException("Unknown session: " + sessionId);
+        }
+
+        if (session.isDestroyed()) {
+            throw new ResourceGoneException("Destroyed session: " + sessionId);
+        }
+
+        if (!session.isCurrent()) {
+            throw new ResourceGoneException("Expired session: " + sessionId);
+        }
+
+        return session;
+    }
+
 }

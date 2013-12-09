@@ -11,8 +11,6 @@ import java.util.UUID;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Singleton;
-import com.sun.jersey.api.NotFoundException;
-import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -40,7 +38,7 @@ public class SessionService {
     public ServerSession getSession(UUID sessionId) {
         log.debug("Getting session: [{}]", sessionId);
 
-        return findSession(sessionId);
+        return sessions.get(sessionId);
     }
 
     public void addSession(ServerSession session) {
@@ -53,9 +51,8 @@ public class SessionService {
         sessions.put(session.getId(), session);
     }
 
-    public ServerSession refreshSession(UUID sessionId) {
-        log.debug("Refreshing session: [{}]", sessionId);
-        final ServerSession session = findSession(sessionId);
+    public ServerSession refreshSession(ServerSession session) {
+        log.debug("Refreshing session: [{}]", session.getId());
 
         try {
             session.refresh();
@@ -66,9 +63,8 @@ public class SessionService {
         return session;
     }
 
-    public ServerSession destroySession(UUID sessionId) {
-        log.debug("Destroying session: [{}]", sessionId);
-        final ServerSession session = findSession(sessionId);
+    public ServerSession destroySession(ServerSession session) {
+        log.debug("Destroying session: [{}]", session.getId());
 
         try {
             session.destroy();
@@ -98,22 +94,5 @@ public class SessionService {
         return purged;
     }
 
-    private ServerSession findSession(UUID sessionId) {
-        final ServerSession session = sessions.get(sessionId);
-
-        if (session == null) {
-            throw new NotFoundException("Unknown session: " + sessionId);
-        }
-
-        if (session.isDestroyed()) {
-            throw new ResourceGoneException("Destroyed session: " + sessionId);
-        }
-
-        if (!session.isCurrent()) {
-            throw new ResourceGoneException("Expired session: " + sessionId);
-        }
-
-        return session;
-    }
 
 }
