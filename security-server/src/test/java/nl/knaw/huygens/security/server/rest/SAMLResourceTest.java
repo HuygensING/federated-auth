@@ -41,19 +41,24 @@ import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.saml2.SAMLEncoder;
 import nl.knaw.huygens.security.server.service.LoginService;
 import nl.knaw.huygens.security.server.service.SessionService;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
 
 public class SAMLResourceTest extends BaseTestCase {
-    private URI testURI = URI.create("www.example.com");
+    private final URI testURI = URI.create("www.example.com");
 
-    private UUID testRelayState = UUID.fromString("12345678-abcd-1234-abcd-1234567890ab");
+    private final UUID testRelayState = UUID.fromString("12345678-abcd-1234-abcd-1234567890ab");
 
-    private String testSAMLRequest = "%3Csaml%20request%3E";
+    private final String testSAMLRequest = "%3Csaml%20request%3E";
+
+    private final LoginRequest testLoginRequest = new LoginRequest(testURI);
+
+    @InjectMocks
+    private SAMLResource sut;
 
     @Mock
     private LoginService loginService;
@@ -64,22 +69,14 @@ public class SAMLResourceTest extends BaseTestCase {
     @Mock
     private SessionService sessionService;
 
-    private LoginRequest testLoginRequest;
-
-    private SAMLResource sut;
-
-    private RESTHelper restHelper;
-
     @BeforeClass
     public static void bootstrapDependencies() throws Exception {
         DefaultBootstrap.bootstrap(); // expensive, only needed once for the entire test suite
     }
 
-    @Before
-    public void initMocks() throws Exception {
-        testLoginRequest = new LoginRequest(testURI);
-        sut = new SAMLResource(sessionService, loginService, samlEncoder);
-        restHelper = new RESTHelper(sut);
+    @Override
+    public Object getSUT() {
+        return sut;
     }
 
     @Test
