@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-//@RunWith(MockitoJUnitRunner.class)
 public class SessionResourceTest extends BaseTestCase {
     public static final String ARBITRARY_VALID_UUID = "11111111-1111-1111-1111-111111111111";
 
