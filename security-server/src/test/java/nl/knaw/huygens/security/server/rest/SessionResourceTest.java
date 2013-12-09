@@ -25,16 +25,18 @@ import com.sun.jersey.api.NotFoundException;
 import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import nl.knaw.huygens.security.server.service.SessionService;
-import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+//@RunWith(MockitoJUnitRunner.class)
 public class SessionResourceTest extends BaseTestCase {
     public static final String ARBITRARY_VALID_UUID = "11111111-1111-1111-1111-111111111111";
 
-    private static final Logger log = LoggerFactory.getLogger(SessionResourceTest.class);
+    private final String testSessionId = ARBITRARY_VALID_UUID;
+
+    @InjectMocks
+    private SessionResource sut;
 
     @Mock
     private SessionService sessionService;
@@ -42,17 +44,9 @@ public class SessionResourceTest extends BaseTestCase {
     @Mock
     private ServerSession testSession;
 
-    private String testSessionId;
-
-    private RESTHelper restHelper;
-
-    private SessionResource sut;
-
-    @Before
-    public void setUp() throws Exception {
-        testSessionId = ARBITRARY_VALID_UUID;
-        sut = new SessionResource(sessionService);
-        restHelper = new RESTHelper(sut);
+   @Override
+    public Object getSUT() {
+        return sut;
     }
 
     @Test
