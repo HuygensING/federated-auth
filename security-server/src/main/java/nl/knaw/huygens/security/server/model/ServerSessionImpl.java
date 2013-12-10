@@ -46,11 +46,15 @@ public class ServerSessionImpl implements ServerSession {
     @JsonIgnore
     @Override
     public boolean isCurrent() {
-        return expiresAt.isAfterNow();
+        return getExpiresAt().isAfterNow();
     }
 
     @Override
     public void refresh() {
         expiresAt = new DateTime().plusMinutes(60);
+    }
+
+    DateTime getExpiresAt() {
+        return expiresAt;
     }
 }
