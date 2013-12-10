@@ -10,7 +10,8 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 public class RESTHelper {
-    private Class<?> sutClass;
+    private final Class<?> sutClass;
+    private Method currentMethod;
 
     public RESTHelper(Object sut) {
         sutClass = sut.getClass();
@@ -26,6 +27,7 @@ public class RESTHelper {
                 final String methodRestSuffix = methodRestAnnotation == null ? "" : methodRestAnnotation.value();
                 final String restPath = classRestPrefix + methodRestSuffix;
                 if (restPath.matches(pathGlob)) {
+                    currentMethod = m;
                     return m;
                 }
             }
@@ -38,11 +40,23 @@ public class RESTHelper {
         return ImmutableList.copyOf(m.getAnnotation(Consumes.class).value());
     }
 
+    public List<String> getConsumedMediaTypes() {
+        return getConsumedMediaTypes(currentMethod);
+    }
+
     public List<String> getProducedMediaTypes(Method m) {
         return ImmutableList.copyOf(m.getAnnotation(Produces.class).value());
     }
 
+    public List<String> getProducedMediaTypes() {
+        return getProducedMediaTypes(currentMethod);
+    }
+
     public List<String> getRolesAllowed(Method m) {
         return ImmutableList.copyOf(m.getAnnotation(RolesAllowed.class).value());
+    }
+
+    public List<String> getRolesAllowed() {
+        return getRolesAllowed(currentMethod);
     }
 }

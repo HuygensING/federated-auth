@@ -10,9 +10,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -48,7 +48,7 @@ import org.mockito.Mock;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
 
-public class SAMLResourceTest extends BaseTestCase {
+public class SAMLResourceTest extends ResourceTestCase {
     private final URI testURI = URI.create("www.example.com");
 
     private final UUID testRelayState = UUID.fromString("12345678-abcd-1234-abcd-1234567890ab");
@@ -203,7 +203,7 @@ public class SAMLResourceTest extends BaseTestCase {
     public void testRESTLoginRequest() throws Exception {
         Method m = restHelper.findMethod("/saml2/login", POST.class);
 
-        assertThat(m.getAnnotation(RolesAllowed.class), is(nullValue()));
+        assertNull(m.getAnnotation(RolesAllowed.class));
         assertThat(restHelper.getProducedMediaTypes(m), contains(TEXT_HTML));
     }
 
@@ -211,31 +211,31 @@ public class SAMLResourceTest extends BaseTestCase {
     public void testRESTAssertionConsumerService() throws Exception {
         Method m = restHelper.findMethod("/saml2/acs", POST.class);
 
-        assertThat(m.getAnnotation(RolesAllowed.class), is(nullValue()));
-        assertThat(restHelper.getProducedMediaTypes(m), contains(TEXT_HTML));
-        assertThat(restHelper.getConsumedMediaTypes(m), contains(APPLICATION_FORM_URLENCODED));
+        assertNull(m.getAnnotation(RolesAllowed.class));
+        assertThat(restHelper.getProducedMediaTypes(), contains(TEXT_HTML));
+        assertThat(restHelper.getConsumedMediaTypes(), contains(APPLICATION_FORM_URLENCODED));
     }
 
     @Test
     public void testRESTRemoveLoginRequest() throws Exception {
-        Method m = restHelper.findMethod("/saml2/requests/<sessionId>", DELETE.class);
+        restHelper.findMethod("/saml2/requests/<sessionId>", DELETE.class);
 
-        final List<String> rolesAllowed = restHelper.getRolesAllowed(m);
+        final List<String> rolesAllowed = restHelper.getRolesAllowed();
         assertThat(rolesAllowed, hasSize(1));
         assertThat(rolesAllowed, contains(LOGIN_MANAGER));
 
-        assertThat(restHelper.getProducedMediaTypes(m), contains(APPLICATION_JSON));
+        assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
     }
 
     @Test
     public void testRESTPurge() throws Exception {
-        final Method m = restHelper.findMethod("/saml2/purge", POST.class);
+        restHelper.findMethod("/saml2/purge", POST.class);
 
-        final List<String> rolesAllowed = restHelper.getRolesAllowed(m);
+        final List<String> rolesAllowed = restHelper.getRolesAllowed();
         assertThat(rolesAllowed, hasSize(1));
         assertThat(rolesAllowed, contains(LOGIN_MANAGER));
 
-        assertThat(restHelper.getProducedMediaTypes(m), contains(APPLICATION_JSON));
+        assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
     }
 
     private String getSAMLResponse() throws IOException {

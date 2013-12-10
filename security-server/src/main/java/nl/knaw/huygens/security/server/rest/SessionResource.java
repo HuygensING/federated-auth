@@ -4,6 +4,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static nl.knaw.huygens.security.core.rest.API.ID_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_PATH;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_URI;
+import static nl.knaw.huygens.security.server.Roles.SESSION_JANITOR;
 import static nl.knaw.huygens.security.server.Roles.SESSION_MANAGER;
 import static nl.knaw.huygens.security.server.Roles.SESSION_VIEWER;
 
@@ -15,7 +16,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-import java.util.Collection;
 import java.util.UUID;
 
 import com.google.inject.Inject;
@@ -44,17 +44,17 @@ public class SessionResource {
 
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed(SESSION_VIEWER)
-    public Collection<ServerSession> getSessions() {
+    @RolesAllowed(SESSION_MANAGER)
+    public Response listSessions() {
         log.debug("LIST sessions");
-        return sessionService.getSessions();
+        return ok(sessionService.getSessions());
     }
 
     @GET
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({SESSION_MANAGER, SESSION_VIEWER})
-    public Response getSession(@PathParam(ID_PARAM) String input) {
+    public Response readSession(@PathParam(ID_PARAM) String input) {
         log.debug("READ session: [{}]", input);
         return ok(findSession(input));
     }
@@ -72,28 +72,30 @@ public class SessionResource {
     @Path(SESSION_AUTHENTICATION_PATH)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)
-    public Response destroySession(@PathParam(ID_PARAM) String input) {
-        log.debug("DESTROY session: [{}]", input);
+    public Response expireSession(@PathParam(ID_PARAM) String input) {
+        log.debug("EXPIRE session: [{}]", input);
         return ok(sessionService.destroySession(findSession(input)));
     }
 
     @POST
     @Path("/purge")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed(SESSION_MANAGER)
+    @RolesAllowed(SESSION_JANITOR)
     public Response purge() {
-        log.debug("Purging sessions");
+        log.debug("PURGE stale sessions");
         return ok(sessionService.purge());
     }
 
-    private ServerSession findSession(String id) {
-        final UUID sessionId;
+    private UUID sanitizeUUID(String input) {
         try {
-            sessionId = UUID.fromString(id);
+            return UUID.fromString(input);
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Session id '" + ID_PARAM + "' is not a valid UUID: " + id);
+            throw new BadRequestException("Invalid '" + ID_PARAM + "' session parameter: " + input);
         }
+    }
 
+    private ServerSession findSession(String input) {
+        final UUID sessionId = sanitizeUUID(input);
         final ServerSession session = sessionService.getSession(sessionId);
 
         if (session == null) {
