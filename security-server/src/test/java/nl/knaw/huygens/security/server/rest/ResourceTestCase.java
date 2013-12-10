@@ -1,5 +1,6 @@
 package nl.knaw.huygens.security.server.rest;
 
+import nl.knaw.huygens.security.BaseTestCase;
 import org.junit.Before;
 
 public abstract class ResourceTestCase extends BaseTestCase {

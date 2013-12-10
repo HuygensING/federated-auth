@@ -65,7 +65,7 @@ public class SessionResource {
     @RolesAllowed(SESSION_MANAGER)
     public Response refreshSession(@PathParam(ID_PARAM) String input) {
         log.debug("REFRESH session: [{}]", input);
-        return ok(sessionService.refreshSession(findSession(input)));
+        return ok(sessionService.refreshSession(sanitizeUUID(input)));
     }
 
     @DELETE
@@ -74,7 +74,7 @@ public class SessionResource {
     @RolesAllowed(SESSION_MANAGER)
     public Response expireSession(@PathParam(ID_PARAM) String input) {
         log.debug("EXPIRE session: [{}]", input);
-        return ok(sessionService.destroySession(findSession(input)));
+        return ok(sessionService.destroySession(sanitizeUUID(input)));
     }
 
     @POST
@@ -96,7 +96,7 @@ public class SessionResource {
 
     private ServerSession findSession(String input) {
         final UUID sessionId = sanitizeUUID(input);
-        final ServerSession session = sessionService.getSession(sessionId);
+        final ServerSession session = sessionService.findSession(sessionId);
 
         if (session == null) {
             throw new NotFoundException("Unknown session: " + sessionId);
