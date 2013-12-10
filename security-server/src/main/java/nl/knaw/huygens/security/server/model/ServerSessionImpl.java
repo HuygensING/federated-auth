@@ -1,5 +1,7 @@
 package nl.knaw.huygens.security.server.model;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -17,8 +19,8 @@ public class ServerSessionImpl implements ServerSession {
     private DateTime expiresAt;
 
     public ServerSessionImpl(HuygensPrincipal owner) {
+        this.owner = checkNotNull(owner);
         this.id = UUID.randomUUID();
-        this.owner = owner;
         refresh();
     }
 
