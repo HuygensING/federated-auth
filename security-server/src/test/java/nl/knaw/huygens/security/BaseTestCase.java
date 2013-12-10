@@ -1,4 +1,4 @@
-package nl.knaw.huygens.security.server.rest;
+package nl.knaw.huygens.security;
 
 import org.junit.Before;
 import org.mockito.MockitoAnnotations;

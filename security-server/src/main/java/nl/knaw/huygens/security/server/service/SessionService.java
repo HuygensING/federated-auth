@@ -11,6 +11,8 @@ import java.util.UUID;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Singleton;
+import com.sun.jersey.api.NotFoundException;
+import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -35,24 +37,60 @@ public class SessionService {
         return sessions.values();
     }
 
-    public ServerSession getSession(UUID sessionId) {
-        log.debug("Getting session: [{}]", sessionId);
+    public ServerSession findSession(final UUID sessionID) {
+        log.debug("Getting session: [{}]", sessionID);
+        final ServerSession session = getSession(sessionID);
 
-        return sessions.get(sessionId);
+        if (session == null) {
+            throw new NotFoundException("Unknown session: " + sessionID);
+        }
+
+        if (!session.isCurrent()) {
+            throw new ResourceGoneException("Expired session: " + sessionID);
+        }
+
+        if (session.isDestroyed()) {
+            throw new ResourceGoneException("Destroyed session: " + sessionID);
+        }
+
+        return session;
     }
 
-    public void addSession(ServerSession session) {
-        log.debug("Adding session: [{}]", session.getId());
+    public void addSession(final ServerSession session) {
+        final UUID sessionID = session.getId();
 
-        if (nextPurge.isBeforeNow()) {
+        if (sessionID == null) {
+            log.warn("Attempt to add session with null session ID");
+            throw new IllegalArgumentException("Refusing to add session with null session ID");
+        }
+
+        if (!session.isCurrent()) {
+            log.warn("Attempt to add expired session: {}", sessionID);
+            throw new IllegalArgumentException("Refusing to add expired session: " + sessionID);
+        }
+
+        if (session.isDestroyed()) {
+            log.warn("Attempt to add destroyed session: {}", sessionID);
+            throw new IllegalArgumentException("Refusing to add destroyed session: " + sessionID);
+        }
+
+        if (sessions.containsKey(sessionID)) {
+            log.warn("Attempt to add duplicate session: {}", sessionID);
+            throw new IllegalStateException("Session already added for session ID: " + sessionID);
+        }
+
+        if (isTimeToPurge()) {
             purge();
         }
 
-        sessions.put(session.getId(), session);
+        log.debug("Adding session: [{}]", sessionID);
+        sessions.put(sessionID, session);
     }
 
-    public ServerSession refreshSession(ServerSession session) {
-        log.debug("Refreshing session: [{}]", session.getId());
+    public ServerSession refreshSession(final UUID sessionID) {
+        log.debug("Refreshing session: [{}]", sessionID);
+
+        final ServerSession session = findSession(sessionID);
 
         try {
             session.refresh();
@@ -63,8 +101,10 @@ public class SessionService {
         return session;
     }
 
-    public ServerSession destroySession(ServerSession session) {
-        log.debug("Destroying session: [{}]", session.getId());
+    public ServerSession destroySession(final UUID sessionID) {
+        log.debug("Destroying session: [{}]", sessionID);
+
+        final ServerSession session = findSession(sessionID);
 
         try {
             session.destroy();
@@ -94,5 +134,12 @@ public class SessionService {
         return purged;
     }
 
+    ServerSession getSession(final UUID sessionID) {
+        return sessions.get(sessionID);
+    }
+
+    boolean isTimeToPurge() {
+        return nextPurge.isBeforeNow();
+    }
 
 }

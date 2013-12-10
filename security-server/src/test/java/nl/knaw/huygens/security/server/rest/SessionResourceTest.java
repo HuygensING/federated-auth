@@ -20,6 +20,7 @@ import javax.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import com.sun.jersey.api.NotFoundException;
 import nl.knaw.huygens.security.server.ResourceGoneException;
@@ -30,9 +31,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 public class SessionResourceTest extends ResourceTestCase {
-    public static final String ARBITRARY_VALID_UUID = "11111111-1111-1111-1111-111111111111";
-
-    private final String testSessionId = ARBITRARY_VALID_UUID;
+    private final UUID testSessionID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     private final Collection<ServerSession> testSessionList = Collections.emptyList();
 
@@ -64,39 +63,39 @@ public class SessionResourceTest extends ResourceTestCase {
 
     @Test
     public void testGetSessionSuccess() throws Exception {
-        when(sessionService.getSession(fromString(testSessionId))).thenReturn(testSession);
+        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
         final Object expectedEntity = testSession;
         when(testSession.isCurrent()).thenReturn(true);
         when(testSession.isDestroyed()).thenReturn(false);
 
-        final Response response = sut.readSession(testSessionId);
+        final Response response = sut.readSession(testSessionID.toString());
 
-        verify(sessionService).getSession(fromString(testSessionId));
+        verify(sessionService).findSession(fromString(testSessionID.toString()));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getEntity(), is(expectedEntity));
     }
 
     @Test(expected = NotFoundException.class)
     public void testGetSessionNotFound() throws Exception {
-        sut.readSession(testSessionId);
+        sut.readSession(testSessionID.toString());
     }
 
     @Test(expected = ResourceGoneException.class)
     public void testGetSessionExpired() throws Exception {
-        when(sessionService.getSession(fromString(testSessionId))).thenReturn(testSession);
+        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
         when(testSession.isCurrent()).thenReturn(false);
         when(testSession.isDestroyed()).thenReturn(false);
 
-        sut.readSession(testSessionId);
+        sut.readSession(testSessionID.toString());
     }
 
     @Test(expected = ResourceGoneException.class)
     public void testGetSessionPurged() throws Exception {
-        when(sessionService.getSession(fromString(testSessionId))).thenReturn(testSession);
+        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
         when(testSession.isCurrent()).thenReturn(true);
         when(testSession.isDestroyed()).thenReturn(true);
 
-        sut.readSession(testSessionId);
+        sut.readSession(testSessionID.toString());
     }
 
     @Test
@@ -104,12 +103,12 @@ public class SessionResourceTest extends ResourceTestCase {
         when(testSession.isCurrent()).thenReturn(true);
         final Object expectedEntity = testSession;
 
-        when(sessionService.getSession(fromString(testSessionId))).thenReturn(testSession);
-        when(sessionService.refreshSession(testSession)).thenReturn(testSession);
+        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
+        when(sessionService.refreshSession(testSessionID)).thenReturn(testSession);
 
-        final Response response = sut.refreshSession(testSessionId);
+        final Response response = sut.refreshSession(testSessionID.toString());
 
-        verify(sessionService).refreshSession(testSession);
+        verify(sessionService).refreshSession(testSessionID);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getEntity(), is(expectedEntity));
     }
@@ -119,12 +118,12 @@ public class SessionResourceTest extends ResourceTestCase {
         when(testSession.isCurrent()).thenReturn(true);
         final Object expectedEntity = testSession;
 
-        when(sessionService.getSession(fromString(testSessionId))).thenReturn(testSession);
-        when(sessionService.destroySession(testSession)).thenReturn(testSession);
+        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
+        when(sessionService.destroySession(testSessionID)).thenReturn(testSession);
 
-        final Response response = sut.expireSession(testSessionId);
+        final Response response = sut.expireSession(testSessionID.toString());
 
-        verify(sessionService).destroySession(testSession);
+        verify(sessionService).destroySession(testSessionID);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getEntity(), is(expectedEntity));
     }
@@ -132,7 +131,7 @@ public class SessionResourceTest extends ResourceTestCase {
     @Test
     public void testSessionPurge() throws Exception {
         when(testSession.isCurrent()).thenReturn(false);
-        when(sessionService.getSession(fromString(testSessionId))).thenReturn(testSession);
+        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
         final Object expectedEntity = testSessionList;
         when(sessionService.purge()).thenReturn(testSessionList);
 
