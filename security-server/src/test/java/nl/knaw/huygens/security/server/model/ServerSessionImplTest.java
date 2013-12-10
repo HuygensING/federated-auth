@@ -31,7 +31,12 @@ public class ServerSessionImplTest extends BaseTestCase {
         }
     }
 
-    @org.junit.Test
+    @Test(expected = NullPointerException.class)
+    public void testConstructorEnforcesPrincipal() throws Exception {
+        new ServerSessionImpl(null);
+    }
+
+    @Test
     public void testNewSessionHasValidID() throws Exception {
         Assert.assertNotNull(sut.getId());
     }
