@@ -51,11 +51,14 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
     ClientResponse response = resource.header(HttpHeaders.AUTHORIZATION, basicCredentials).get(ClientResponse.class);
 
     switch (response.getClientResponseStatus()) {
+    case OK:
+      break;
     case NOT_FOUND:
       LOG.info("Session token {} is unknown.", sessionToken);
       throw new UnauthorizedException();
-    case OK:
-      break;
+    case GONE:
+      LOG.info("Session of token {} is expired.", sessionToken);
+      throw new UnauthorizedException();
     case BAD_REQUEST:
       LOG.error("Illegal session token {}.", sessionToken);
       throw new UnauthorizedException();

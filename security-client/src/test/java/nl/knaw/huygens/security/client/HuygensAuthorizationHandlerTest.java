@@ -4,23 +4,26 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import javax.ws.rs.core.HttpHeaders;
 import java.util.EnumSet;
 import java.util.UUID;
+
+import javax.ws.rs.core.HttpHeaders;
+
+import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
+import nl.knaw.huygens.security.client.model.SecurityInformation;
+import nl.knaw.huygens.security.core.model.Affiliation;
+import nl.knaw.huygens.security.core.model.HuygensPrincipal;
+import nl.knaw.huygens.security.core.rest.API;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
-import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
-import nl.knaw.huygens.security.client.model.SecurityInformation;
-import nl.knaw.huygens.security.core.model.Affiliation;
-import nl.knaw.huygens.security.core.model.HuygensPrincipal;
-import nl.knaw.huygens.security.core.rest.API;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class HuygensAuthorizationHandlerTest {
   private static final String AUTHORIZATION_URL = "http://localhost:9000";
@@ -50,8 +53,7 @@ public class HuygensAuthorizationHandlerTest {
 
   @Test
   public void testGetSecurityInformationExistingUser() throws UnauthorizedException {
-    ClientResponse response = mock(ClientResponse.class);
-    when(response.getClientResponseStatus()).thenReturn(Status.OK);
+    ClientResponse response = createClientResponse(Status.OK);
     when(response.getEntity(ClientSession.class)).thenReturn(createSecuritySession());
 
     setUpClient(response);
@@ -74,8 +76,7 @@ public class HuygensAuthorizationHandlerTest {
 
   @Test(expected = UnauthorizedException.class)
   public void testGetSecurityInformationSessionNotFound() throws UnauthorizedException {
-    ClientResponse response = mock(ClientResponse.class);
-    when(response.getClientResponseStatus()).thenReturn(Status.NOT_FOUND);
+    ClientResponse response = createClientResponse(Status.NOT_FOUND);
 
     setUpClient(response);
 
@@ -84,8 +85,7 @@ public class HuygensAuthorizationHandlerTest {
 
   @Test(expected = UnauthorizedException.class)
   public void testGetSecurityInformationIllegalSessionToken() throws UnauthorizedException {
-    ClientResponse response = mock(ClientResponse.class);
-    when(response.getClientResponseStatus()).thenReturn(Status.BAD_REQUEST);
+    ClientResponse response = createClientResponse(Status.BAD_REQUEST);
     setUpClient(response);
 
     instance.getSecurityInformation(DEFAULT_SESSION_ID);
@@ -93,12 +93,26 @@ public class HuygensAuthorizationHandlerTest {
 
   @Test(expected = UnauthorizedException.class)
   public void testGetSecurityInformationWrongCredentials() throws UnauthorizedException {
-    ClientResponse response = mock(ClientResponse.class);
-    when(response.getClientResponseStatus()).thenReturn(Status.FORBIDDEN);
+    ClientResponse response = createClientResponse(Status.FORBIDDEN);
 
     setUpClient(response);
 
     instance.getSecurityInformation(DEFAULT_SESSION_ID);
+  }
+
+  @Test(expected = UnauthorizedException.class)
+  public void testGetSecurityInformationSessionExpired() throws UnauthorizedException {
+    ClientResponse response = createClientResponse(Status.GONE);
+
+    setUpClient(response);
+
+    instance.getSecurityInformation(DEFAULT_SESSION_ID);
+  }
+
+  private ClientResponse createClientResponse(Status status) {
+    ClientResponse response = mock(ClientResponse.class);
+    when(response.getClientResponseStatus()).thenReturn(status);
+    return response;
   }
 
   private void setUpClient(ClientResponse response) {
