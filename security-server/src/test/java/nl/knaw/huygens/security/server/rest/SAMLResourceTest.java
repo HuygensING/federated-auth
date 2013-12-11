@@ -69,14 +69,14 @@ public class SAMLResourceTest extends ResourceTestCase {
     @InjectMocks
     private SAMLResource sut;
 
-    @Override
-    public Object getSUT() {
-        return sut;
-    }
-
     @BeforeClass
     public static void bootstrapDependencies() throws Exception {
         DefaultBootstrap.bootstrap(); // expensive, only needed once for the entire test suite
+    }
+
+    @Override
+    public Object getSUT() {
+        return sut;
     }
 
     @Test
@@ -185,10 +185,10 @@ public class SAMLResourceTest extends ResourceTestCase {
 
         //when
         Response response = sut.purgeExpiredLoginRequests();
+        @SuppressWarnings("unchecked")
+        Collection<LoginRequest> purged = (Collection<LoginRequest>) response.getEntity();
 
         //then
-        @SuppressWarnings("unchecked") Collection<LoginRequest> purged = (Collection<LoginRequest>) response
-                .getEntity();
         assertThat(purged, hasSize(1));
         assertThat(purged, contains(testLoginRequest));
     }

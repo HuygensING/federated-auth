@@ -7,10 +7,13 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import javax.security.auth.DestroyFailedException;
+import javax.security.auth.RefreshFailedException;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -34,12 +37,12 @@ public class SessionServiceTest extends BaseTestCase {
     private SessionService sut;
 
     @Test
-    public void testGetSessions() throws Exception {
+    public void testGetSessions() {
         assertThat(sut.getSessions(), hasSize(0));
     }
 
     @Test
-    public void testAddSessionOK() throws Exception {
+    public void testAddSessionOK() {
         setupTestSession(true, false);
 
         sut.addSession(testSession);
@@ -49,123 +52,162 @@ public class SessionServiceTest extends BaseTestCase {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testAddIllegalSession() throws Exception {
+    public void testAddIllegalSession() {
         sut.addSession(testSession);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testAddExpiredSession() throws Exception {
+    public void testAddExpiredSession() {
         setupTestSession(false, false);
         sut.addSession(testSession);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testAddDestroyedSession() throws Exception {
+    public void testAddDestroyedSession() {
         setupTestSession(true, true);
         sut.addSession(testSession);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testAddDuplicateSession() throws Exception {
+    public void testAddDuplicateSession() {
         setupTestSession(true, false);
         sut.addSession(testSession);
         sut.addSession(testSession);
     }
 
     @Test
-    public void testAddSessionPurgesStaleSessions() throws Exception {
+    public void testAddSessionPurgesStaleSessions() {
+        //given
         final ServerSession staleSession = mock(ServerSession.class);
-        when(staleSession.getId()).thenReturn(fromString("22222222-2222-2222-2222-222222222222"));
-        when(staleSession.isCurrent()).thenReturn(true); // start 'fresh' to allow adding
+        given(staleSession.getId()).willReturn(fromString("22222222-2222-2222-2222-222222222222"));
+        given(staleSession.isCurrent()).willReturn(true); // start 'fresh' to allow adding
 
+        //when
         sut.addSession(staleSession);
+
+        //then
         assertThat(sut.getSessions(), contains(staleSession));
 
+        //given
         setupTestSession(true, false);
-        when(staleSession.isCurrent()).thenReturn(false); // now make it 'stale' to force purging
-        when(sut.isTimeToPurge()).thenReturn(true);
+        given(staleSession.isCurrent()).willReturn(false); // now make it 'stale' to force purging
+        given(sut.isTimeToPurge()).willReturn(true);
 
+        //when
         sut.addSession(testSession);
+
+        //then
         assertThat(sut.getSessions(), not(contains(staleSession)));
         assertThat(sut.getSessions(), contains(testSession));
     }
 
     @Test
-    public void testFindSessionOK() throws Exception {
+    public void testFindSessionOK() {
+        //given
         setupTestSession(true, false);
+
+        //when
         sut.addSession(testSession);
+
+        //then
         assertThat(sut.findSession(testSessionID), is(testSession));
     }
 
     @Test(expected = NotFoundException.class)
-    public void testFindNonExistentSession() throws Exception {
+    public void testFindNonExistentSession() {
         sut.findSession(testSessionID);
     }
 
     @Test(expected = ResourceGoneException.class)
-    public void testFindExpiredSession() throws Exception {
+    public void testFindExpiredSession() {
         setupTestSession(true, false);
         sut.addSession(testSession);
-        when(testSession.isCurrent()).thenReturn(false);
+        given(testSession.isCurrent()).willReturn(false);
         sut.findSession(testSessionID);
     }
 
     @Test(expected = ResourceGoneException.class)
-    public void testFindDestroyedSession() throws Exception {
+    public void testFindDestroyedSession() {
+        //given
         setupTestSession(true, false);
         sut.addSession(testSession);
-        when(testSession.isDestroyed()).thenReturn(true);
+        given(testSession.isDestroyed()).willReturn(true);
         sut.findSession(testSessionID);
     }
 
     @Test
-    public void testRefreshSession() throws Exception {
+    public void testRefreshSession() throws RefreshFailedException {
+        //given
         setupTestSession(true, false);
         sut.addSession(testSession);
+
+        //when
         sut.refreshSession(testSessionID);
+
+        //then
         verify(testSession).refresh();
     }
 
     @Test
-    public void testDestroySession() throws Exception {
+    public void testDestroySession() throws DestroyFailedException {
+        //given
         setupTestSession(true, false);
         sut.addSession(testSession);
+
+        //when
         sut.destroySession(testSessionID);
+
+        //then
         verify(testSession).destroy();
     }
 
     @Test
-    public void testPurge() throws Exception {
+    public void testPurge() {
+        //given
+        final ServerSession expiredSession = createExpiredSession();
+        final ServerSession destroyedSession = createDestroyedSession();
+        final ServerSession destroyedAndExpiredSession = createDestroyedAndExpiredSession();
         setupTestSession(true, false);
         sut.addSession(testSession);
 
-        final ServerSession expiredSession = mock(ServerSession.class);
-        when(expiredSession.getId()).thenReturn(UUID.fromString("22222222-2222-2222-2222-222222222222"));
-        when(expiredSession.isCurrent()).thenReturn(true);
-        sut.addSession(expiredSession);
-        when(expiredSession.isCurrent()).thenReturn(false);
-        when(expiredSession.isDestroyed()).thenReturn(false);
-
-        final ServerSession destroyedSession = mock(ServerSession.class);
-        when(destroyedSession.getId()).thenReturn(UUID.fromString("33333333-3333-3333-3333-333333333333"));
-        when(destroyedSession.isCurrent()).thenReturn(true);
-        sut.addSession(destroyedSession);
-        when(destroyedSession.isDestroyed()).thenReturn(true);
-
-        final ServerSession destroyedAndExpiredSession = mock(ServerSession.class);
-        when(destroyedAndExpiredSession.getId()).thenReturn(UUID.fromString("44444444-4444-4444-4444-444444444444"));
-        when(destroyedAndExpiredSession.isCurrent()).thenReturn(true);
-        sut.addSession(destroyedAndExpiredSession);
-        when(destroyedAndExpiredSession.isCurrent()).thenReturn(false);
-        when(destroyedAndExpiredSession.isDestroyed()).thenReturn(true);
-
+        //when
         final Collection<ServerSession> purgedSessions = sut.purge();
+
+        //then
         assertThat(purgedSessions, not(contains(testSession)));
         assertThat(purgedSessions, containsInAnyOrder(expiredSession, destroyedSession, destroyedAndExpiredSession));
-
         final Collection<ServerSession> remainingSessionsAfterPurge = sut.getSessions();
         assertThat(remainingSessionsAfterPurge, hasSize(1));
         assertThat(remainingSessionsAfterPurge, contains(testSession));
+    }
+
+    ServerSession createExpiredSession() {
+        final ServerSession session = mock(ServerSession.class);
+        when(session.getId()).thenReturn(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+        when(session.isCurrent()).thenReturn(true);
+        sut.addSession(session);
+        when(session.isCurrent()).thenReturn(false);
+        when(session.isDestroyed()).thenReturn(false);
+        return session;
+    }
+
+    ServerSession createDestroyedSession() {
+        final ServerSession session = mock(ServerSession.class);
+        when(session.getId()).thenReturn(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+        when(session.isCurrent()).thenReturn(true);
+        sut.addSession(session);
+        when(session.isDestroyed()).thenReturn(true);
+        return session;
+    }
+
+    ServerSession createDestroyedAndExpiredSession() {
+        final ServerSession session = mock(ServerSession.class);
+        when(session.getId()).thenReturn(UUID.fromString("44444444-4444-4444-4444-444444444444"));
+        when(session.isCurrent()).thenReturn(true);
+        sut.addSession(session);
+        when(session.isCurrent()).thenReturn(false);
+        when(session.isDestroyed()).thenReturn(true);
+        return session;
     }
 
     private void setupTestSession(boolean current, boolean destroyed) {
