@@ -22,6 +22,7 @@ import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.core.Response;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -35,12 +36,14 @@ import java.util.UUID;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.sun.jersey.api.NotFoundException;
+
 import nl.knaw.huygens.security.core.rest.API;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.saml2.SAMLEncoder;
 import nl.knaw.huygens.security.server.service.LoginService;
 import nl.knaw.huygens.security.server.service.SessionService;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -169,7 +172,8 @@ public class SAMLResourceTest extends ResourceTestCase {
     public void testPurgeExpiredLoginRequests() throws Exception {
         when(loginService.purgeExpiredRequests()).thenReturn(Lists.newArrayList(testLoginRequest));
         final Response response = sut.purgeExpiredLoginRequests();
-        Collection purged = (Collection) response.getEntity();
+        @SuppressWarnings("unchecked")
+        Collection<LoginRequest> purged = (Collection<LoginRequest>) response.getEntity();
         assertThat(purged, hasSize(1));
         assertThat(purged, contains(testLoginRequest));
     }
