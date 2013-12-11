@@ -15,13 +15,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 
-public class ServerSessionImplTest extends BaseTestCase {
+public class ServerSessionTest extends BaseTestCase {
     @Mock
     private HuygensPrincipal principal;
 
     @Spy
     @InjectMocks
-    private ServerSessionImpl sut;
+    private ServerSession sut;
 
     private static void sleepMilliSecond() {
         try {
@@ -33,7 +33,7 @@ public class ServerSessionImplTest extends BaseTestCase {
 
     @Test(expected = NullPointerException.class)
     public void testConstructorEnforcesPrincipal() throws Exception {
-        new ServerSessionImpl(null);
+        new ServerSession(null);
     }
 
     @Test
