@@ -1,7 +1,5 @@
 package nl.knaw.huygens.security.server.service;
 
-import javax.security.auth.DestroyFailedException;
-import javax.security.auth.RefreshFailedException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -92,11 +90,7 @@ public class SessionService {
 
         final ServerSession session = findSession(sessionID);
 
-        try {
-            session.refresh();
-        } catch (RefreshFailedException e) {
-            log.warn("Failed to refresh session: {}", session);
-        }
+        session.refresh();
 
         return session;
     }
@@ -106,11 +100,7 @@ public class SessionService {
 
         final ServerSession session = findSession(sessionID);
 
-        try {
-            session.destroy();
-        } catch (DestroyFailedException e) {
-            log.warn("Failed to destroy session: {}", session);
-        }
+        session.destroy();
 
         return session;
     }
