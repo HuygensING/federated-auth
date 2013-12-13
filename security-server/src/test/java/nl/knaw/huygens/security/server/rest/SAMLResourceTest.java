@@ -6,23 +6,22 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static nl.knaw.huygens.security.server.Roles.LOGIN_MANAGER;
 import static nl.knaw.huygens.security.server.rest.SAMLResource.SURF_IDP_SSO_URL;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.when;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.core.Response;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -36,14 +35,12 @@ import java.util.UUID;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.sun.jersey.api.NotFoundException;
-
 import nl.knaw.huygens.security.core.rest.API;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.saml2.SAMLEncoder;
 import nl.knaw.huygens.security.server.service.LoginService;
 import nl.knaw.huygens.security.server.service.SessionService;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -60,9 +57,6 @@ public class SAMLResourceTest extends ResourceTestCase {
 
     private final LoginRequest testLoginRequest = new LoginRequest(testURI);
 
-    @InjectMocks
-    private SAMLResource sut;
-
     @Mock
     private LoginService loginService;
 
@@ -71,6 +65,9 @@ public class SAMLResourceTest extends ResourceTestCase {
 
     @Mock
     private SessionService sessionService;
+
+    @InjectMocks
+    private SAMLResource sut;
 
     @BeforeClass
     public static void bootstrapDependencies() throws Exception {
@@ -84,21 +81,27 @@ public class SAMLResourceTest extends ResourceTestCase {
 
     @Test
     public void testLoginMustRedirect() throws Exception {
-        when(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).thenReturn(testSAMLRequest);
-        when(loginService.createLoginRequest(testURI)).thenReturn(testRelayState);
-        assertThat(sut.requestLogin(testURI).getStatus(), is(303));
+        given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
+        given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
+
+        //when
+        final Response response = sut.requestLogin(testURI);
+
+        //then
+        assertThat(response.getStatus(), is(303));
     }
 
     @Test
     public void testLoginRedirectLocationSAML2Compliance() throws Exception {
-        when(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).thenReturn(testSAMLRequest);
-        when(loginService.createLoginRequest(testURI)).thenReturn(testRelayState);
+        given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
+        given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
 
+        //when
         final Response response = sut.requestLogin(testURI);
 
+        //then
         final URI locationURI = (URI) response.getMetadata().getFirst("Location");
         assertThat(locationURI.getScheme(), is("https"));  // transport must be secure
-
         final String location = locationURI.toString();
         assertThat(location, startsWith(SURF_IDP_SSO_URL));
         assertThat(location, containsString("RelayState=" + testRelayState));
@@ -107,13 +110,15 @@ public class SAMLResourceTest extends ResourceTestCase {
 
     @Test
     public void testLoginCachingHeadersSAML2Compliance() throws Exception {
-        when(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).thenReturn(testSAMLRequest);
-        when(loginService.createLoginRequest(testURI)).thenReturn(testRelayState);
+        given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
+        given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
 
+        //when
         final Response response = sut.requestLogin(testURI);
+
+        //then
         final List<Object> cacheControl = response.getMetadata().get("Cache-Control");
         final List<Object> pragma = response.getMetadata().get("pragma");
-
         /* 3.4.5.1, HTTP and Caching Considerations:
          * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
          * To ensure this, the following rules SHOULD be followed.
@@ -158,9 +163,14 @@ public class SAMLResourceTest extends ResourceTestCase {
 
     @Test
     public void testConsumeAssertion() throws Exception {
+        //given
         final UUID relayState = testLoginRequest.getRelayState();
-        when(loginService.removeLoginRequest(relayState)).thenReturn(testLoginRequest);
+        given(loginService.removeLoginRequest(relayState)).willReturn(testLoginRequest);
+
+        //when
         final Response response = sut.consumeAssertion(getSAMLResponse(), relayState.toString());
+
+        //then
         assertEquals(303, response.getStatus());
         final URI locationURI = (URI) response.getMetadata().getFirst("Location");
         final String location = locationURI.toString();
@@ -170,18 +180,27 @@ public class SAMLResourceTest extends ResourceTestCase {
 
     @Test
     public void testPurgeExpiredLoginRequests() throws Exception {
-        when(loginService.purgeExpiredRequests()).thenReturn(Lists.newArrayList(testLoginRequest));
-        final Response response = sut.purgeExpiredLoginRequests();
+        //given
+        given(loginService.purgeExpiredRequests()).willReturn(Lists.newArrayList(testLoginRequest));
+
+        //when
+        Response response = sut.purgeExpiredLoginRequests();
         @SuppressWarnings("unchecked")
         Collection<LoginRequest> purged = (Collection<LoginRequest>) response.getEntity();
+
+        //then
         assertThat(purged, hasSize(1));
         assertThat(purged, contains(testLoginRequest));
     }
 
     @Test
     public void testGetLoginRequests() throws Exception {
-        when(loginService.getPendingLoginRequests()).thenReturn(Lists.newArrayList(testLoginRequest));
+        given(loginService.getPendingLoginRequests()).willReturn(Lists.newArrayList(testLoginRequest));
+
+        //when
         final Collection<LoginRequest> loginRequests = sut.getLoginRequests();
+
+        //then
         assertThat(loginRequests, hasSize(1));
         assertThat(loginRequests, contains(testLoginRequest));
     }
@@ -198,8 +217,12 @@ public class SAMLResourceTest extends ResourceTestCase {
 
     @Test
     public void testRemoveLoginRequestForValidUUID() throws Exception {
-        when(loginService.removeLoginRequest(testRelayState)).thenReturn(testLoginRequest);
+        given(loginService.removeLoginRequest(testRelayState)).willReturn(testLoginRequest);
+
+        //when
         final Response response = sut.removeLoginRequest(testRelayState.toString());
+
+        //then
         assertThat(testLoginRequest, is(response.getEntity()));
     }
 
