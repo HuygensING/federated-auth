@@ -1,10 +1,13 @@
 package nl.knaw.huygens.security.client;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.UUID;
+
 import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
 import nl.knaw.huygens.security.core.model.HuygensSession;
-import nl.knaw.huygens.security.core.rest.API;
+import static nl.knaw.huygens.security.core.rest.API.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -16,6 +19,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 public class HuygensAuthorizationHandler implements AuthorizationHandler {
+
   private Logger LOG = LoggerFactory.getLogger(HuygensAuthorizationHandler.class);
 
   private final Client client;
@@ -36,6 +40,18 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
   @Override
   public SecurityInformation getSecurityInformation(String sessionToken) throws UnauthorizedException {
 
+    HuygensSession session = doSessionDetailsRequest(sessionToken);
+    
+    doSessionRefresh(session.getId());
+
+    return new HuygensSecurityInformation(session.getOwner());
+  }
+  
+  private void doSessionRefresh(UUID sessionId){
+    client.resource(authorizationUrl).path(SESSION_AUTHENTICATION_URI).path(sessionId.toString()).path(REFRESH_PATH).put();
+  }
+
+  private HuygensSession doSessionDetailsRequest(String sessionToken) throws UnauthorizedException {
     LOG.info("sessionToken: {}", sessionToken);
     if (StringUtils.isBlank(sessionToken)) {
       LOG.info("Session token was empty");
@@ -44,7 +60,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     LOG.info("authorization url: {}", authorizationUrl);
 
-    WebResource resource = client.resource(authorizationUrl).path(API.SESSION_AUTHENTICATION_URI).path(sessionToken);
+    WebResource resource = client.resource(authorizationUrl).path(SESSION_AUTHENTICATION_URI).path(sessionToken);
 
     LOG.info("url: {}", resource.getURI());
 
@@ -71,7 +87,6 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
     LOG.info("clientResponse: " + response);
 
     HuygensSession session = response.getEntity(ClientSession.class);
-
-    return new HuygensSecurityInformation(session.getOwner());
+    return session;
   }
 }

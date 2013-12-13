@@ -12,18 +12,22 @@ import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
+
 import java.util.UUID;
 
 import com.google.inject.Inject;
 import com.sun.jersey.api.NotFoundException;
+
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import nl.knaw.huygens.security.server.service.SessionService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +63,7 @@ public class SessionResource {
         return ok(findSession(input));
     }
 
-    @POST
+    @PUT
     @Path(SESSION_AUTHENTICATION_PATH + "/refresh")
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)

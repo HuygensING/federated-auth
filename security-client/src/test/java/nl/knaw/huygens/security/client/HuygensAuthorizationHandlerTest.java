@@ -3,6 +3,7 @@ package nl.knaw.huygens.security.client;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import java.util.EnumSet;
 import java.util.UUID;
@@ -13,7 +14,7 @@ import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
 import nl.knaw.huygens.security.core.model.Affiliation;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
-import nl.knaw.huygens.security.core.rest.API;
+import static nl.knaw.huygens.security.core.rest.API.*;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,6 +37,7 @@ public class HuygensAuthorizationHandlerTest {
   private static final String NAME = "John Doe";
   private static final EnumSet<Affiliation> AFFILIATIONS = EnumSet.of(Affiliation.employee);
   private static final String CREDENTIALS = "Huygens 9aweh80opgf";
+  private static final UUID TEST_SESSION_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
   private Client client;
   private HuygensAuthorizationHandler instance;
 
@@ -56,12 +58,13 @@ public class HuygensAuthorizationHandlerTest {
     ClientResponse response = createClientResponse(Status.OK);
     when(response.getEntity(ClientSession.class)).thenReturn(createSecuritySession());
 
-    setUpClient(response);
+    WebResource resource = setUpClient(response);
 
     SecurityInformation expected = createSecurityInformation();
 
     SecurityInformation actual = instance.getSecurityInformation(DEFAULT_SESSION_ID);
     assertEquals(expected, actual);
+    verify(resource).put();
   }
 
   @Test(expected = UnauthorizedException.class)
@@ -115,16 +118,20 @@ public class HuygensAuthorizationHandlerTest {
     return response;
   }
 
-  private void setUpClient(ClientResponse response) {
+  private WebResource setUpClient(ClientResponse response) {
     Builder builder = mock(Builder.class);
     when(builder.get(ClientResponse.class)).thenReturn(response);
 
     WebResource resource = mock(WebResource.class);
     when(resource.path(DEFAULT_SESSION_ID)).thenReturn(resource);
-    when(resource.path(API.SESSION_AUTHENTICATION_URI)).thenReturn(resource);
+    when(resource.path(SESSION_AUTHENTICATION_URI)).thenReturn(resource);
+    when(resource.path(REFRESH_PATH)).thenReturn(resource);
+    when(resource.path(TEST_SESSION_ID.toString())).thenReturn(resource);
     when(resource.header(HttpHeaders.AUTHORIZATION, CREDENTIALS)).thenReturn(builder);
 
     when(client.resource(AUTHORIZATION_URL)).thenReturn(resource);
+    
+    return resource;
 
   }
 
@@ -140,7 +147,7 @@ public class HuygensAuthorizationHandlerTest {
 
       @Override
       public UUID getId() {
-        return UUID.randomUUID();
+        return TEST_SESSION_ID;
       }
     };
 

@@ -16,16 +16,20 @@ import static org.mockito.Mockito.when;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.core.Response;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import com.sun.jersey.api.NotFoundException;
+
 import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
 import nl.knaw.huygens.security.server.service.SessionService;
+
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -166,7 +170,7 @@ public class SessionResourceTest extends ResourceTestCase {
 
     @Test
     public void testRESTRefreshSession() throws Exception {
-        restHelper.findMethod("/sessions/<id>/refresh", POST.class);
+        restHelper.findMethod("/sessions/<id>/refresh", PUT.class);
 
         final List<String> rolesAllowed = restHelper.getRolesAllowed();
         assertThat(rolesAllowed, hasSize(1));
