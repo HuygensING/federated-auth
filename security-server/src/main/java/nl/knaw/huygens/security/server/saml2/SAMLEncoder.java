@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
+import com.google.inject.Singleton;
 import org.opensaml.Configuration;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
+@Singleton
 public class SAMLEncoder {
     private static final Logger log = LoggerFactory.getLogger(SAMLEncoder.class);
 

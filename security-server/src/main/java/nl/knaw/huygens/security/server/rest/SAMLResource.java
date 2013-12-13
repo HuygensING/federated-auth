@@ -47,7 +47,6 @@ import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.model.ServerSession;
-import nl.knaw.huygens.security.server.model.ServerSessionImpl;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
 import nl.knaw.huygens.security.server.saml2.SAMLEncoder;
 import nl.knaw.huygens.security.server.service.LoginService;
@@ -215,7 +214,7 @@ public class SAMLResource {
         final UriBuilder uriBuilder = UriBuilder.fromUri(loginRequest.getRedirectURI());
         if (SAML_SUCCESS.equals(statusCode)) {
             log.debug("Login successful: [{}]", huygensPrincipal);
-            final ServerSession session = new ServerSessionImpl(huygensPrincipal);
+            final ServerSession session = new ServerSession(huygensPrincipal);
             try {
                 uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
             } catch (IllegalArgumentException e) {

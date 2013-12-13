@@ -10,8 +10,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -39,14 +39,14 @@ public class SessionResourceTest extends ResourceTestCase {
 
     private final Collection<ServerSession> testSessionList = Collections.emptyList();
 
-    @InjectMocks
-    private SessionResource sut;
-
     @Mock
     private SessionService sessionService;
 
     @Mock
     private ServerSession testSession;
+
+    @InjectMocks
+    private SessionResource sut;
 
     @Override
     public Object getSUT() {
@@ -55,138 +55,151 @@ public class SessionResourceTest extends ResourceTestCase {
 
     @Test
     public void testListSessions() throws Exception {
-        when(sessionService.getSessions()).thenReturn(testSessionList);
-        final Object expectedEntity = testSessionList;
+        given(sessionService.getSessions()).willReturn(testSessionList);
 
+        //when
         final Response response = sut.listSessions();
+        @SuppressWarnings("unchecked")
+        final Collection<ServerSession> sessions = (Collection<ServerSession>) response.getEntity();
 
+        //then
         verify(sessionService).getSessions();
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getEntity(), is(expectedEntity));
+        assertThat(sessions, is(testSessionList));
     }
 
     @Test
     public void testGetSessionSuccess() throws Exception {
-        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
-        final Object expectedEntity = testSession;
-        when(testSession.isCurrent()).thenReturn(true);
-        when(testSession.isDestroyed()).thenReturn(false);
+        given(sessionService.findSession(testSessionID)).willReturn(testSession);
+        given(testSession.isCurrent()).willReturn(true);
+        given(testSession.isDestroyed()).willReturn(false);
 
+        //when
         final Response response = sut.readSession(testSessionID.toString());
 
+        //then
         verify(sessionService).findSession(fromString(testSessionID.toString()));
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getEntity(), is(expectedEntity));
+        assertThat((ServerSession) response.getEntity(), is(testSession));
     }
 
     @Test(expected = NotFoundException.class)
     public void testGetSessionNotFound() throws Exception {
+        //when
         sut.readSession(testSessionID.toString());
     }
 
     @Test(expected = ResourceGoneException.class)
     public void testGetSessionExpired() throws Exception {
-        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
-        when(testSession.isCurrent()).thenReturn(false);
-        when(testSession.isDestroyed()).thenReturn(false);
+        given(sessionService.findSession(testSessionID)).willReturn(testSession);
+        given(testSession.isCurrent()).willReturn(false);
+        given(testSession.isDestroyed()).willReturn(false);
 
+        //when
         sut.readSession(testSessionID.toString());
     }
 
     @Test(expected = ResourceGoneException.class)
     public void testGetSessionPurged() throws Exception {
-        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
-        when(testSession.isCurrent()).thenReturn(true);
-        when(testSession.isDestroyed()).thenReturn(true);
+        given(sessionService.findSession(testSessionID)).willReturn(testSession);
+        given(testSession.isCurrent()).willReturn(true);
+        given(testSession.isDestroyed()).willReturn(true);
 
+        //when
         sut.readSession(testSessionID.toString());
     }
 
     @Test
     public void testSessionRefresh() throws Exception {
-        when(testSession.isCurrent()).thenReturn(true);
-        final Object expectedEntity = testSession;
+        given(testSession.isCurrent()).willReturn(true);
+        given(sessionService.findSession(testSessionID)).willReturn(testSession);
+        given(sessionService.refreshSession(testSessionID)).willReturn(testSession);
 
-        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
-        when(sessionService.refreshSession(testSessionID)).thenReturn(testSession);
-
+        //when
         final Response response = sut.refreshSession(testSessionID.toString());
 
+        //then
         verify(sessionService).refreshSession(testSessionID);
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getEntity(), is(expectedEntity));
+        assertThat((ServerSession) response.getEntity(), is(testSession));
     }
 
     @Test
     public void testSessionDestroy() throws Exception {
-        when(testSession.isCurrent()).thenReturn(true);
-        final Object expectedEntity = testSession;
+        given(testSession.isCurrent()).willReturn(true);
+        given(sessionService.findSession(testSessionID)).willReturn(testSession);
+        given(sessionService.destroySession(testSessionID)).willReturn(testSession);
 
-        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
-        when(sessionService.destroySession(testSessionID)).thenReturn(testSession);
-
+        //when
         final Response response = sut.expireSession(testSessionID.toString());
 
+        //then
         verify(sessionService).destroySession(testSessionID);
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getEntity(), is(expectedEntity));
+        assertThat((ServerSession) response.getEntity(), is(testSession));
     }
 
     @Test
     public void testSessionPurge() throws Exception {
-        when(testSession.isCurrent()).thenReturn(false);
-        when(sessionService.findSession(testSessionID)).thenReturn(testSession);
-        final Object expectedEntity = testSessionList;
-        when(sessionService.purge()).thenReturn(testSessionList);
+        given(testSession.isCurrent()).willReturn(false);
+        given(sessionService.findSession(testSessionID)).willReturn(testSession);
+        given(sessionService.purge()).willReturn(testSessionList);
 
+        //when
         final Response response = sut.purge();
+        @SuppressWarnings("unchecked")
+        final Collection<ServerSession> sessions = (Collection<ServerSession>) response.getEntity();
 
+        //then
         verify(sessionService).purge();
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getEntity(), is(expectedEntity));
+        assertThat(sessions, is(testSessionList));
     }
 
     @Test
     public void testRESTGetSession() throws Exception {
+        //given
         restHelper.findMethod("/sessions/<id>", GET.class);
 
+        //then
         final List<String> rolesAllowed = restHelper.getRolesAllowed();
         assertThat(rolesAllowed, hasSize(2));
         assertThat(rolesAllowed, containsInAnyOrder(SESSION_VIEWER, SESSION_MANAGER));
-
         assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
     }
 
     @Test
     public void testRESTDeleteSession() throws Exception {
+        //given
         restHelper.findMethod("/sessions/<id>", DELETE.class);
 
+        //then
         final List<String> rolesAllowed = restHelper.getRolesAllowed();
         assertThat(rolesAllowed, hasSize(1));
         assertThat(rolesAllowed, contains(SESSION_MANAGER));
-
         assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
     }
 
     @Test
     public void testRESTRefreshSession() throws Exception {
         restHelper.findMethod("/sessions/<id>/refresh", PUT.class);
-
+        //given
+        //then
         final List<String> rolesAllowed = restHelper.getRolesAllowed();
         assertThat(rolesAllowed, hasSize(1));
         assertThat(rolesAllowed, contains(SESSION_MANAGER));
-
         assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
     }
 
     @Test
     public void testRESTPurge() throws Exception {
+        //given
         restHelper.findMethod("/sessions/purge", POST.class);
 
+        //then
         final List<String> rolesAllowed = restHelper.getRolesAllowed();
         assertThat(rolesAllowed, hasSize(1));
         assertThat(rolesAllowed, contains(SESSION_JANITOR));
-
         assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
     }
 }
