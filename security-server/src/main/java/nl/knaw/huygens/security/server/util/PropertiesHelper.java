@@ -1,5 +1,7 @@
 package nl.knaw.huygens.security.server.util;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -19,7 +21,8 @@ public class PropertiesHelper {
     }
 
     public static Properties getAuthProperties() {
-        return getProperties(buildResourceName("auth"));
+        final Properties auth = getProperties(buildResourceName("auth"));
+        return getProperties(new File(auth.getProperty("roles.file")));
     }
 
     private static String buildResourceName(String name) {
@@ -30,10 +33,23 @@ public class PropertiesHelper {
         final Properties properties = new Properties();
 
         try {
-            log.debug("Loading properties: {}", resourceName);
+            log.debug("Loading properties from classpath: {}", resourceName);
             properties.load(INSTANCE.getClass().getResourceAsStream(resourceName));
         } catch (IOException e) {
-            log.warn("IOException reading {}: {}", resourceName, e.toString());
+            log.warn("IOException reading {}: {}", resourceName, e);
+        }
+
+        return properties;
+    }
+
+    private static Properties getProperties(File file) {
+        final Properties properties = new Properties();
+
+        try {
+            log.debug("Loading properties from file: {}", file);
+            properties.load(new FileInputStream(file));
+        } catch (IOException e) {
+            log.warn("IOException reading {}: {}", file, e);
         }
 
         return properties;
