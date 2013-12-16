@@ -17,6 +17,7 @@ import com.google.common.net.HttpHeaders;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.WebResource.Builder;
 
 public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
@@ -60,11 +61,9 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     LOG.info("authorization url: {}", authorizationUrl);
 
-    WebResource resource = client.resource(authorizationUrl).path(SESSION_AUTHENTICATION_URI).path(sessionToken);
-
-    LOG.info("url: {}", resource.getURI());
-
-    ClientResponse response = resource.header(HttpHeaders.AUTHORIZATION, basicCredentials).get(ClientResponse.class);
+    Builder builder = createSessionResourceBuilder(sessionToken);
+    
+    ClientResponse response = builder.get(ClientResponse.class);
 
     switch (response.getClientResponseStatus()) {
     case OK:
@@ -88,5 +87,40 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     HuygensSession session = response.getEntity(ClientSession.class);
     return session;
+  }
+
+  private Builder createSessionResourceBuilder(String sessionToken) {
+    WebResource resource = client.resource(authorizationUrl).path(SESSION_AUTHENTICATION_URI).path(sessionToken);
+
+    LOG.info("url: {}", resource.getURI());
+
+    Builder builder = resource.header(HttpHeaders.AUTHORIZATION, basicCredentials);
+    return builder;
+  }
+  
+  /**
+   * Destroy the session of the user that wants to logout.
+   * @param sessionToken the session id that should be destroyed.
+   * @return {@code true} if the session was (already) destroyed or expired.
+   * @throws {@link IllegalArgumentException} if {@code sessionToken} is not a legal session id on the server.
+   * @throws {@link UnauthorizedException} when the client is unauthorized to destroy the session.
+   */
+  public boolean logout(String sessionToken) throws UnauthorizedException{
+    Builder builder = createSessionResourceBuilder(sessionToken);
+    
+    ClientResponse response = builder.delete(ClientResponse.class);
+    
+    switch (response.getClientResponseStatus()) {
+    case OK:
+    case NOT_FOUND:
+    case GONE:
+      return true;
+    case BAD_REQUEST:
+      throw new IllegalArgumentException("Illegal session token: " + sessionToken);
+    case FORBIDDEN:
+      throw new UnauthorizedException("Session token: " + sessionToken);
+    default:
+      return false;
+    }   
   }
 }
