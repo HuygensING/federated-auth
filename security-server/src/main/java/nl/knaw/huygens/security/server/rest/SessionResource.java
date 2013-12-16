@@ -2,6 +2,7 @@ package nl.knaw.huygens.security.server.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static nl.knaw.huygens.security.core.rest.API.ID_PARAM;
+import static nl.knaw.huygens.security.core.rest.API.REFRESH_PATH;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_PATH;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_URI;
 import static nl.knaw.huygens.security.server.Roles.SESSION_JANITOR;
@@ -64,7 +65,7 @@ public class SessionResource {
     }
 
     @PUT
-    @Path(SESSION_AUTHENTICATION_PATH + "/refresh")
+    @Path(SESSION_AUTHENTICATION_PATH + REFRESH_PATH)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_MANAGER)
     public Response refreshSession(@PathParam(ID_PARAM) String input) {
