@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 @Path(SESSION_AUTHENTICATION_URI)
 public class SessionResource {
-
     private static final Logger log = LoggerFactory.getLogger(SessionResource.class);
 
     private final SessionService sessionService;
@@ -63,7 +62,23 @@ public class SessionResource {
     @RolesAllowed({SESSION_MANAGER, SESSION_VIEWER})
     public Response readSession(@PathParam(ID_PARAM) String input) {
         log.debug("READ session: [{}]", input);
-        return ok(findSession(input));
+        final UUID sessionId = sanitizeUUID(input);
+
+        final ServerSession session = sessionService.findSession(sessionId);
+
+        if (session == null) {
+            throw new NotFoundException("Unknown session: " + sessionId);
+        }
+
+        if (session.isDestroyed()) {
+            throw new ResourceGoneException("Destroyed session: " + sessionId);
+        }
+
+        if (!session.isCurrent()) {
+            throw new ResourceGoneException("Expired session: " + sessionId);
+        }
+
+        return ok(session);
     }
 
     @PUT
@@ -99,25 +114,6 @@ public class SessionResource {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Invalid '" + ID_PARAM + "' session parameter: " + input);
         }
-    }
-
-    private ServerSession findSession(String input) {
-        final UUID sessionId = sanitizeUUID(input);
-        final ServerSession session = sessionService.findSession(sessionId);
-
-        if (session == null) {
-            throw new NotFoundException("Unknown session: " + sessionId);
-        }
-
-        if (session.isDestroyed()) {
-            throw new ResourceGoneException("Destroyed session: " + sessionId);
-        }
-
-        if (!session.isCurrent()) {
-            throw new ResourceGoneException("Expired session: " + sessionId);
-        }
-
-        return session;
     }
 
 }
