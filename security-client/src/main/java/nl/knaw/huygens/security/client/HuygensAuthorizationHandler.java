@@ -2,8 +2,6 @@ package nl.knaw.huygens.security.client;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.UUID;
-
 import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
 import nl.knaw.huygens.security.core.model.HuygensSession;
@@ -43,13 +41,13 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     HuygensSession session = doSessionDetailsRequest(sessionToken);
     
-    doSessionRefresh(session.getId());
+    doSessionRefresh(sessionToken);
 
     return new HuygensSecurityInformation(session.getOwner());
   }
   
-  private void doSessionRefresh(UUID sessionId){
-    client.resource(authorizationUrl).path(SESSION_AUTHENTICATION_URI).path(sessionId.toString()).path(REFRESH_PATH).put();
+  private void doSessionRefresh(String sessionToken){
+    client.resource(authorizationUrl).path(SESSION_AUTHENTICATION_URI).path(sessionToken).path(REFRESH_PATH).header(HttpHeaders.AUTHORIZATION, basicCredentials).put();
   }
 
   private HuygensSession doSessionDetailsRequest(String sessionToken) throws UnauthorizedException {
@@ -94,8 +92,7 @@ public class HuygensAuthorizationHandler implements AuthorizationHandler {
 
     LOG.info("url: {}", resource.getURI());
 
-    Builder builder = resource.header(HttpHeaders.AUTHORIZATION, basicCredentials);
-    return builder;
+    return resource.header(HttpHeaders.AUTHORIZATION, basicCredentials);
   }
   
   /**

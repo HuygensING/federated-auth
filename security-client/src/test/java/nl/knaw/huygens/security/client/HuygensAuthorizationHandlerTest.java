@@ -1,9 +1,13 @@
 package nl.knaw.huygens.security.client;
 
-import static org.junit.Assert.*;
+import static nl.knaw.huygens.security.core.rest.API.REFRESH_PATH;
+import static nl.knaw.huygens.security.core.rest.API.SESSION_AUTHENTICATION_URI;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 import java.util.UUID;
@@ -14,7 +18,6 @@ import nl.knaw.huygens.security.client.model.HuygensSecurityInformation;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
 import nl.knaw.huygens.security.core.model.Affiliation;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
-import static nl.knaw.huygens.security.core.rest.API.*;
 
 import org.junit.After;
 import org.junit.Before;
@@ -58,13 +61,22 @@ public class HuygensAuthorizationHandlerTest {
     ClientResponse response = createClientResponse(Status.OK);
     when(response.getEntity(ClientSession.class)).thenReturn(createSecuritySession());
 
-    WebResource resource = setUpClient(response, setupGETResponse(response));
+    Builder builder = setupGETResponse(response);
+    WebResource resource = setUpClient(response, builder);
 
     SecurityInformation expected = createSecurityInformation();
 
     SecurityInformation actual = instance.getSecurityInformation(DEFAULT_SESSION_ID);
     assertEquals(expected, actual);
-    verify(resource).put();
+    /* 
+     * 2 requests are executed
+     * A GET to retrieve the session.
+     * A PUT to refresh the session.
+     */
+    verify(resource, times(2)).header(HttpHeaders.AUTHORIZATION, CREDENTIALS);
+    verify(builder).put();
+    verify(builder).get(ClientResponse.class);
+
   }
 
   @Test(expected = UnauthorizedException.class)
