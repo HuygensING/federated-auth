@@ -15,77 +15,67 @@
 
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript">
-    $(document).ready(function(){
-    var accessToken = getParameterByName('hsid');
-
-    if (accessToken.length < 1) {
-        login();
-    } else {
-    $.ajax({
-    headers: {
-        'Authorization': 'Huygens bWVqOm1pZXI='
-    },
-    url: 'https://secure.huygens.knaw.nl/sessions/' + accessToken,
-    error: function(data){
-    if(data.status === 400 || data.status === 404) {
-        login();
-    }
-    },
-    success:function(data){
-    var table = $('#data');
-    $.each(data, function(key, value){
-    var tr = null;
-    if(value instanceof Object){
-    var subTable = $('<table>');
-        $.each(value, function(subKey, subValue){
-        subTable.append('<tr><td>' + subKey + '</td><td>' + subValue + '</td></tr>');
-        });
-
-        tr = $('<tr>');
-            var keyTd = $('<td>');
-                keyTd.append(key);
-                var valueTd = $('<td>');
-                valueTd.append(subTable);
-                tr.append(keyTd);
-                tr.append(valueTd);
-                }
-                else{
-                tr = '<tr><td>' + key + '</td><td>' + value + '</td></tr>';
+    $(document).ready(function() {
+        var accessToken = getParameterByName('hsid');
+        if (accessToken.length < 1) {
+            login();
+        } else {
+            $.ajax({
+                headers: {'Authorization': 'Huygens bWVqOm1pZXI='},
+                url: 'https://secure.huygens.knaw.nl/sessions/' + accessToken,
+                error: function(data) {
+                    if (data.status === 400 || data.status === 404 || data.status === 410) {
+                        login();
+                    }
+                },
+                success:function(data) {
+                    var table = $('#data');
+                    $.each(data, function(key, value) {
+                        var tr = null;
+                        if (value instanceof Object) {
+                            var subTable = $('<table>');
+                            $.each(value, function(subKey, subValue) {
+                                subTable.append('<tr><td>' + subKey + '</td><td>' + subValue + '</td></tr>');
+                            });
+                            tr = $('<tr>');
+                            var keyTd = $('<td>');
+                            keyTd.append(key);
+                            var valueTd = $('<td>');
+                            valueTd.append(subTable);
+                            tr.append(keyTd);
+                            tr.append(valueTd);
+                        } else {
+                            tr = '<tr><td>' + key + '</td><td>' + value + '</td></tr>';
+                        }
+                        table.append(tr);
+                    });
+                },
+                type: 'GET'
+            });
         }
-
-        table.append(tr);
-        });
-        },
-        type: 'GET'
-        });
-    }
+    });
 
     function getParameterByName(name) {
         name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
         results = regex.exec(location.search);
         return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-        }
+    }
+
+    function login() {
+        var wl = window.location;
+        var hsURL = wl.origin + wl.pathname;
+        var form = $('<form>').attr({
+            method: 'POST',
+            action: 'https://secure.huygens.knaw.nl/saml2/login'
         });
-
-    function login(){
-    var wl = window.location;
-    var hsURL = wl.origin + wl.pathname;
-    var loginURL = 'https://secure.huygens.knaw.nl/saml2/login';
-
-    var form = $('<form>');
-        form.attr({
-        method: 'POST',
-        action: loginURL
-        });
-
         hsUrlEl = $('<input>').attr({
-        name: 'hsurl', value: hsURL, type: 'hidden'
+            name: 'hsurl', value: hsURL, type: 'hidden'
         });
         form.append(hsUrlEl);
         $('body').append(form);
         form.submit();
-        }
+    }
 </script>
 </body>
 </html>

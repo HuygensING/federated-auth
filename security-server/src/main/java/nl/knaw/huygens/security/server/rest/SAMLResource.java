@@ -1,11 +1,11 @@
 package nl.knaw.huygens.security.server.rest;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static nl.knaw.huygens.security.core.rest.API.REDIRECT_URL_HTTP_PARAM;
 import static nl.knaw.huygens.security.core.rest.API.SESSION_ID_HTTP_PARAM;
 import static nl.knaw.huygens.security.server.Roles.LOGIN_MANAGER;
-import static nl.knaw.huygens.security.server.saml2.SAMLEncoder.deflateAndBase64Encode;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
@@ -16,7 +16,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriBuilderException;
@@ -29,7 +28,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -44,12 +42,13 @@ import java.util.UUID;
 
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
+import com.sun.jersey.api.NotFoundException;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.model.LoginRequest;
 import nl.knaw.huygens.security.server.model.ServerSession;
-import nl.knaw.huygens.security.server.model.ServerSessionImpl;
 import nl.knaw.huygens.security.server.saml2.SAML2PrincipalAttributesMapper;
+import nl.knaw.huygens.security.server.saml2.SAMLEncoder;
 import nl.knaw.huygens.security.server.service.LoginService;
 import nl.knaw.huygens.security.server.service.SessionService;
 import org.joda.time.DateTime;
@@ -108,25 +107,51 @@ public class SAMLResource {
 
     private final SessionService sessionService;
 
-    private final LoginService loginManager;
+    private final LoginService loginService;
+
+    private final SAMLEncoder samlEncoder;
 
     @Inject
-    public SAMLResource(SessionService sessionService, LoginService loginManager) {
+    public SAMLResource(SessionService sessionService, LoginService loginService, SAMLEncoder samlEncoder) {
         this.sessionService = sessionService;
-        this.loginManager = loginManager;
+        this.loginService = loginService;
+        this.samlEncoder = samlEncoder;
     }
 
     @POST
     @Path("/login")
-    @Produces(MediaType.TEXT_HTML)
-    public Response loginPOST(@FormParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
-        return login(redirectURI);
+    @Produces(TEXT_HTML)
+    public Response requestLogin(@FormParam(REDIRECT_URL_HTTP_PARAM) URI redirectURI) throws MessageEncodingException {
+        log.debug("Login request, redirectURI=[{}]", redirectURI);
+
+        final UUID relayState = loginService.createLoginRequest(redirectURI);
+        log.debug("Relay state: [{}]", relayState);
+
+        final String request = samlEncoder.deflateAndBase64Encode(buildAuthnRequestObject());
+        log.debug("SAML request: [{}]", request);
+
+        UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL);
+        uriBuilder.queryParam(QUERY_PARAM_RELAY_STATE, relayState);
+        uriBuilder.queryParam(QUERY_PARAM_SAML_REQUEST, request);
+
+        /* 3.4.5.1, HTTP and Caching Considerations:
+         * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
+         * To ensure this, the following rules SHOULD be followed.
+         * When returning SAML protocol messages using HTTP 1.1, HTTP responders SHOULD:
+         * Include a Cache-Control header field set to "no-cache, no-store".
+         * Include a Pragma header field set to "no-cache".
+         */
+        return Response.seeOther(uriBuilder.build()) //
+                .header("Cache-Control", "no-cache") //
+                .header("Cache-Control", "no-store") //
+                .header("Pragma", "no-cache") //
+                .build();
     }
 
     @POST
     @Path("/acs")  // Part of the SURFconext contract -- Thou shalt not change this path!
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(APPLICATION_FORM_URLENCODED)
+    @Produces(TEXT_HTML)
     public Response consumeAssertion(@FormParam(QUERY_PARAM_SAML_RESPONSE) String samlResponseParam,
                                      @FormParam(QUERY_PARAM_RELAY_STATE) String relayStateParam) {
         log.trace("consumeAssertion: RelayState={}, SAMLResponse={}", relayStateParam, samlResponseParam);
@@ -148,10 +173,9 @@ public class SAMLResource {
             throw new BadRequestException(MSG_ILLEGAL_RELAY_STATE);
         }
 
-        final LoginRequest loginRequest = loginManager.removeLoginRequest(relayState);
+        final LoginRequest loginRequest = loginService.removeLoginRequest(relayState);
         if (loginRequest == null) {
-            log.warn(MSG_UNKNOWN_RELAY_STATE);
-            return Response.status(NOT_FOUND).entity(MSG_UNKNOWN_RELAY_STATE).build();
+            throw new NotFoundException(MSG_UNKNOWN_RELAY_STATE);
         }
 
         String samlResponse = new String(Base64.decode(samlResponseParam));
@@ -190,7 +214,7 @@ public class SAMLResource {
         final UriBuilder uriBuilder = UriBuilder.fromUri(loginRequest.getRedirectURI());
         if (SAML_SUCCESS.equals(statusCode)) {
             log.debug("Login successful: [{}]", huygensPrincipal);
-            final ServerSession session = new ServerSessionImpl(huygensPrincipal);
+            final ServerSession session = new ServerSession(huygensPrincipal);
             try {
                 uriBuilder.queryParam(SESSION_ID_HTTP_PARAM, session.getId());
             } catch (IllegalArgumentException e) {
@@ -219,8 +243,8 @@ public class SAMLResource {
     @RolesAllowed(LOGIN_MANAGER)
     @Path("/purge")
     @Produces(APPLICATION_JSON)
-    public Collection<LoginRequest> purgeExpiredLoginRequests() {
-        return loginManager.purgeExpiredRequests();
+    public Response purgeExpiredLoginRequests() {
+        return Response.ok(loginService.purgeExpiredRequests()).build();
     }
 
     @GET
@@ -228,7 +252,7 @@ public class SAMLResource {
     @Path("/requests")
     @Produces(APPLICATION_JSON)
     public Collection<LoginRequest> getLoginRequests() {
-        return loginManager.getPendingLoginRequests();
+        return loginService.getPendingLoginRequests();
     }
 
     @DELETE
@@ -243,35 +267,12 @@ public class SAMLResource {
             throw new BadRequestException("Illegal relayState (not a UUID): " + id);
         }
 
-        final LoginRequest request = loginManager.removeLoginRequest(relayState);
+        final LoginRequest request = loginService.removeLoginRequest(relayState);
         if (request == null) {
-            return Response.ok().build();
+            throw new NotFoundException("Login request not found: " + relayState);
         }
 
         return Response.ok(request).build();
-    }
-
-    private Response login(final URI redirectURI) throws MessageEncodingException {
-        log.debug("Login request, redirectURI=[{}]", redirectURI);
-
-        final UUID relayState = loginManager.createLoginRequest(redirectURI);
-        final String request = deflateAndBase64Encode(buildAuthnRequestObject());
-
-        UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL);
-        uriBuilder.queryParam(QUERY_PARAM_RELAY_STATE, relayState);
-        uriBuilder.queryParam(QUERY_PARAM_SAML_REQUEST, request);
-
-        /* 3.4.5.1, HTTP and Caching Considerations:
-         * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
-         * To ensure this, the following rules SHOULD be followed.
-         * When returning SAML protocol messages using HTTP 1.1, HTTP responders SHOULD:
-         * Include a Cache-Control header field set to "no-cache, no-store".
-         * Include a Pragma header field set to "no-cache".
-         */
-        return Response.seeOther(uriBuilder.build()) //
-                .header("Cache-Control", "no-cache, no-store") //
-                .header("Pragma", "no-cache") //
-                .build();
     }
 
     private void verify(Signature signature) {
@@ -302,8 +303,6 @@ public class SAMLResource {
             log.warn("Signature Validation Exception: {}", e.getMessage());
         } catch (CertificateException e) {
             log.warn("CertificateException: {}", e.getMessage());
-        } catch (URISyntaxException e) {
-            log.warn("URISyntaxException: {}", e.getMessage());
         } catch (FileNotFoundException e) {
             log.warn("Certificate file not found: {}", e.getMessage());
         } catch (NoSuchAlgorithmException e) {
@@ -313,11 +312,12 @@ public class SAMLResource {
         }
     }
 
-    private File getCertFile() throws URISyntaxException {
-        final ClassLoader classLoader = getClass().getClassLoader();
-        final URL resource = classLoader.getResource(RES_SURFCONEXT_CERT);
-        log.trace("getCertFile: resource={}", resource);
-        return new File(resource.toURI());
+    private File getCertFile() {
+//        final ClassLoader classLoader = getClass().getClassLoader();
+//        final URL resource = classLoader.getResource(RES_SURFCONEXT_CERT);
+//        return new File(resource.toURI());
+        final URL url = getClass().getResource(RES_SURFCONEXT_CERT);
+        return new File(url.getFile());
     }
 
     private AuthnRequest buildAuthnRequestObject() {

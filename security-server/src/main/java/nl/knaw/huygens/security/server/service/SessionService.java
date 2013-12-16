@@ -1,7 +1,5 @@
 package nl.knaw.huygens.security.server.service;
 
-import javax.security.auth.DestroyFailedException;
-import javax.security.auth.RefreshFailedException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -37,44 +35,72 @@ public class SessionService {
         return sessions.values();
     }
 
-    public ServerSession getSession(UUID sessionId) {
-        log.debug("Getting session: [{}]", sessionId);
+    public ServerSession findSession(final UUID sessionID) {
+        log.debug("Getting session: [{}]", sessionID);
+        final ServerSession session = getSession(sessionID);
 
-        return findSession(sessionId);
-    }
-
-    public void addSession(ServerSession session) {
-        log.debug("Adding session: [{}]", session.getId());
-
-        if (nextPurge.isBeforeNow()) {
-            purge();
+        if (session == null) {
+            throw new NotFoundException("Unknown session: " + sessionID);
         }
 
-        sessions.put(session.getId(), session);
-    }
+        if (!session.isCurrent()) {
+            throw new ResourceGoneException("Expired session: " + sessionID);
+        }
 
-    public ServerSession refreshSession(UUID sessionId) {
-        log.debug("Refreshing session: [{}]", sessionId);
-        final ServerSession session = findSession(sessionId);
-
-        try {
-            session.refresh();
-        } catch (RefreshFailedException e) {
-            log.warn("Failed to refresh session: {}", session);
+        if (session.isDestroyed()) {
+            throw new ResourceGoneException("Destroyed session: " + sessionID);
         }
 
         return session;
     }
 
-    public ServerSession destroySession(UUID sessionId) {
-        log.debug("Destroying session: [{}]", sessionId);
-        final ServerSession session = findSession(sessionId);
+    public void addSession(final ServerSession session) {
+        final UUID sessionID = session.getId();
 
-        try {
-            session.destroy();
-        } catch (DestroyFailedException e) {
-            log.warn("Failed to destroy session: {}", session);
+        if (sessionID == null) {
+            log.warn("Attempt to add session with null session ID");
+            throw new IllegalArgumentException("Refusing to add session with null session ID");
         }
+
+        if (!session.isCurrent()) {
+            log.warn("Attempt to add expired session: {}", sessionID);
+            throw new IllegalArgumentException("Refusing to add expired session: " + sessionID);
+        }
+
+        if (session.isDestroyed()) {
+            log.warn("Attempt to add destroyed session: {}", sessionID);
+            throw new IllegalArgumentException("Refusing to add destroyed session: " + sessionID);
+        }
+
+        if (sessions.containsKey(sessionID)) {
+            log.warn("Attempt to add duplicate session: {}", sessionID);
+            throw new IllegalStateException("Session already added for session ID: " + sessionID);
+        }
+
+        if (isTimeToPurge()) {
+            purge();
+        }
+
+        log.debug("Adding session: [{}]", sessionID);
+        sessions.put(sessionID, session);
+    }
+
+    public ServerSession refreshSession(final UUID sessionID) {
+        log.debug("Refreshing session: [{}]", sessionID);
+
+        final ServerSession session = findSession(sessionID);
+
+        session.refresh();
+
+        return session;
+    }
+
+    public ServerSession destroySession(final UUID sessionID) {
+        log.debug("Destroying session: [{}]", sessionID);
+
+        final ServerSession session = findSession(sessionID);
+
+        session.destroy();
 
         return session;
     }
@@ -98,22 +124,12 @@ public class SessionService {
         return purged;
     }
 
-    private ServerSession findSession(UUID sessionId) {
-        final ServerSession session = sessions.get(sessionId);
+    ServerSession getSession(final UUID sessionID) {
+        return sessions.get(sessionID);
+    }
 
-        if (session == null) {
-            throw new NotFoundException("Unknown session: " + sessionId);
-        }
-
-        if (session.isDestroyed()) {
-            throw new ResourceGoneException("Destroyed session: " + sessionId);
-        }
-
-        if (!session.isCurrent()) {
-            throw new ResourceGoneException("Expired session: " + sessionId);
-        }
-
-        return session;
+    boolean isTimeToPurge() {
+        return nextPurge.isBeforeNow();
     }
 
 }
