@@ -24,6 +24,7 @@ import java.util.UUID;
 import com.google.inject.Inject;
 import com.sun.jersey.api.NotFoundException;
 
+import nl.knaw.huygens.security.core.rest.API;
 import nl.knaw.huygens.security.server.BadRequestException;
 import nl.knaw.huygens.security.server.ResourceGoneException;
 import nl.knaw.huygens.security.server.model.ServerSession;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 @Path(SESSION_AUTHENTICATION_URI)
 public class SessionResource {
+
     private static final Logger log = LoggerFactory.getLogger(SessionResource.class);
 
     private final SessionService sessionService;
@@ -83,7 +85,7 @@ public class SessionResource {
     }
 
     @POST
-    @Path("/purge")
+    @Path(API.PURGE_PATH)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(SESSION_JANITOR)
     public Response purge() {
