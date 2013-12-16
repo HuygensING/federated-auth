@@ -1,6 +1,6 @@
 package nl.knaw.huygens.security.client;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -58,7 +58,7 @@ public class HuygensAuthorizationHandlerTest {
     ClientResponse response = createClientResponse(Status.OK);
     when(response.getEntity(ClientSession.class)).thenReturn(createSecuritySession());
 
-    WebResource resource = setUpClient(response);
+    WebResource resource = setUpClient(response, setupGETResponse(response));
 
     SecurityInformation expected = createSecurityInformation();
 
@@ -81,7 +81,7 @@ public class HuygensAuthorizationHandlerTest {
   public void testGetSecurityInformationSessionNotFound() throws UnauthorizedException {
     ClientResponse response = createClientResponse(Status.NOT_FOUND);
 
-    setUpClient(response);
+    setUpClient(response, setupGETResponse(response));
 
     instance.getSecurityInformation(DEFAULT_SESSION_ID);
   }
@@ -89,7 +89,7 @@ public class HuygensAuthorizationHandlerTest {
   @Test(expected = UnauthorizedException.class)
   public void testGetSecurityInformationIllegalSessionToken() throws UnauthorizedException {
     ClientResponse response = createClientResponse(Status.BAD_REQUEST);
-    setUpClient(response);
+    setUpClient(response, setupGETResponse(response));
 
     instance.getSecurityInformation(DEFAULT_SESSION_ID);
   }
@@ -98,7 +98,7 @@ public class HuygensAuthorizationHandlerTest {
   public void testGetSecurityInformationWrongCredentials() throws UnauthorizedException {
     ClientResponse response = createClientResponse(Status.FORBIDDEN);
 
-    setUpClient(response);
+    setUpClient(response, setupGETResponse(response));
 
     instance.getSecurityInformation(DEFAULT_SESSION_ID);
   }
@@ -107,9 +107,63 @@ public class HuygensAuthorizationHandlerTest {
   public void testGetSecurityInformationSessionExpired() throws UnauthorizedException {
     ClientResponse response = createClientResponse(Status.GONE);
 
-    setUpClient(response);
+    setUpClient(response, setupGETResponse(response));
 
     instance.getSecurityInformation(DEFAULT_SESSION_ID);
+  }
+
+  @Test
+  public void testLogout() throws UnauthorizedException {
+    Builder builder = setupDELETEResource(Status.OK);
+
+    assertTrue(instance.logout(DEFAULT_SESSION_ID));
+    verify(builder).delete(ClientResponse.class);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testLogoutIllegalUUID() throws UnauthorizedException {
+    Builder builder = setupDELETEResource(Status.BAD_REQUEST);
+
+    try {
+      instance.logout(DEFAULT_SESSION_ID);
+    } finally {
+      verify(builder).delete(ClientResponse.class);
+    }
+  }
+
+  @Test
+  public void testLogoutSessionDoesNotExist() throws UnauthorizedException {
+    Builder builder = setupDELETEResource(Status.NOT_FOUND);
+
+    assertTrue(instance.logout(DEFAULT_SESSION_ID));
+    verify(builder).delete(ClientResponse.class);
+  }
+
+  @Test
+  public void testLogoutSessionIsInActive() throws UnauthorizedException {
+    Builder builder = setupDELETEResource(Status.GONE);
+
+    assertTrue(instance.logout(DEFAULT_SESSION_ID));
+    verify(builder).delete(ClientResponse.class);
+  }
+
+  @Test(expected = UnauthorizedException.class)
+  public void testLogoutWrongCredentials() throws UnauthorizedException {
+    Builder builder = setupDELETEResource(Status.FORBIDDEN);
+    try {
+      instance.logout(DEFAULT_SESSION_ID);
+    } finally {
+      verify(builder).delete(ClientResponse.class);
+    }
+  }
+
+  private Builder setupDELETEResource(Status status) {
+    ClientResponse response = createClientResponse(status);
+
+    Builder builder = setupDELETEResponse(response);
+    setUpClient(response, builder);
+
+    return builder;
   }
 
   private ClientResponse createClientResponse(Status status) {
@@ -118,10 +172,7 @@ public class HuygensAuthorizationHandlerTest {
     return response;
   }
 
-  private WebResource setUpClient(ClientResponse response) {
-    Builder builder = mock(Builder.class);
-    when(builder.get(ClientResponse.class)).thenReturn(response);
-
+  private WebResource setUpClient(ClientResponse response, Builder builder) {
     WebResource resource = mock(WebResource.class);
     when(resource.path(DEFAULT_SESSION_ID)).thenReturn(resource);
     when(resource.path(SESSION_AUTHENTICATION_URI)).thenReturn(resource);
@@ -130,9 +181,21 @@ public class HuygensAuthorizationHandlerTest {
     when(resource.header(HttpHeaders.AUTHORIZATION, CREDENTIALS)).thenReturn(builder);
 
     when(client.resource(AUTHORIZATION_URL)).thenReturn(resource);
-    
+
     return resource;
 
+  }
+
+  private Builder setupDELETEResponse(ClientResponse response) {
+    Builder builder = mock(Builder.class);
+    when(builder.delete(ClientResponse.class)).thenReturn(response);
+    return builder;
+  }
+
+  private Builder setupGETResponse(ClientResponse response) {
+    Builder builder = mock(Builder.class);
+    when(builder.get(ClientResponse.class)).thenReturn(response);
+    return builder;
   }
 
   private ClientSession createSecuritySession() {
