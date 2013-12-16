@@ -17,16 +17,20 @@ public class PropertiesHelper {
     }
 
     public static Properties getBuildProperties() {
-        return getProperties(buildResourceName("build"));
+        return getProperties("/build.properties");
     }
 
     public static Properties getAuthProperties() {
-        final Properties auth = getProperties(buildResourceName("auth"));
+        final Properties auth = getProperties();
         return getProperties(new File(auth.getProperty("roles.file")));
     }
 
-    private static String buildResourceName(String name) {
-        return "/" + name + ".properties";
+    public static int getIntegerProperty(String property) {
+        return Integer.parseInt(getProperties().getProperty(property));
+    }
+
+    private static Properties getProperties() {
+        return getProperties("/hss.properties");
     }
 
     private static Properties getProperties(String resourceName) {

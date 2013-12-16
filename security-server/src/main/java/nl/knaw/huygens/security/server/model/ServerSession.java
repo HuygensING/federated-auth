@@ -9,9 +9,12 @@ import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import nl.knaw.huygens.security.core.model.HuygensPrincipal;
 import nl.knaw.huygens.security.core.model.HuygensSession;
+import nl.knaw.huygens.security.server.util.PropertiesHelper;
 import org.joda.time.DateTime;
 
 public class ServerSession implements HuygensSession, Destroyable, Refreshable {
+    private static final int DURATION = PropertiesHelper.getIntegerProperty("session.duration");
+
     private final UUID id;
 
     private final HuygensPrincipal owner;
@@ -56,7 +59,7 @@ public class ServerSession implements HuygensSession, Destroyable, Refreshable {
 
     @Override
     public void refresh() {
-        expiresAt = new DateTime().plusMinutes(60); // TODO: make configurable
+        expiresAt = new DateTime().plusMinutes(DURATION);
     }
 
     DateTime getExpiresAt() {
