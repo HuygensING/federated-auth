@@ -38,12 +38,12 @@ public abstract class AbstractSecurityAnnotationResourceFilterFactory implements
     if (!hasRightAnnotations(am)) {
       return null;
     }
+
     if (!securityEnabled) {
-      return Collections.<ResourceFilter> singletonList(createNoSecurityResourceFilter());
+      return Collections.singletonList(createNoSecurityResourceFilter());
     }
 
-    return Collections.<ResourceFilter> singletonList(createResourceFilter(am));
-
+    return Collections.singletonList(createResourceFilter(am));
   }
 
 }
