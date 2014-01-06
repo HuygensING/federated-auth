@@ -3,15 +3,15 @@ package nl.knaw.huygens.security.client.filters;
 import com.google.inject.Inject;
 import com.sun.jersey.api.model.AbstractMethod;
 import com.sun.jersey.spi.container.ResourceFilter;
-import nl.knaw.huygens.security.client.AuthorizationHandler;
+import nl.knaw.huygens.security.client.AuthenticationHandler;
 import nl.knaw.huygens.security.client.SecurityContextCreator;
 
 public class SecurityResourceFilterFactory extends AbstractRolesAllowedResourceFilterFactory {
   private final SecurityContextCreator securityContextCreator;
-  private final AuthorizationHandler authorizationHandler;
+  private final AuthenticationHandler authorizationHandler;
 
   @Inject
-  public SecurityResourceFilterFactory(SecurityContextCreator securityContextCreator, AuthorizationHandler authorizationHandler) {
+  public SecurityResourceFilterFactory(SecurityContextCreator securityContextCreator, AuthenticationHandler authorizationHandler) {
     this.securityContextCreator = securityContextCreator;
     this.authorizationHandler = authorizationHandler;
   }

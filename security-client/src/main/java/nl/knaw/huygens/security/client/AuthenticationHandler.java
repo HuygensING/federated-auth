@@ -7,7 +7,7 @@ import nl.knaw.huygens.security.client.model.SecurityInformation;
  * SecurityInformation. This interface should be used to communicate with 3rd
  * party security services.
  */
-public interface AuthorizationHandler {
+public interface AuthenticationHandler {
 
   /**
    * Extracts the information for needed for creating a SecurityContext from a

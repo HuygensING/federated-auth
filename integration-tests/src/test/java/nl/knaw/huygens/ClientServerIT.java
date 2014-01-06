@@ -17,7 +17,7 @@ import com.sun.jersey.api.container.filter.LoggingFilter;
 import com.sun.jersey.test.framework.AppDescriptor;
 import com.sun.jersey.test.framework.JerseyTest;
 import com.sun.jersey.test.framework.WebAppDescriptor.Builder;
-import nl.knaw.huygens.security.client.HuygensAuthorizationHandler;
+import nl.knaw.huygens.security.client.HuygensAuthenticationHandler;
 import nl.knaw.huygens.security.client.UnauthorizedException;
 import nl.knaw.huygens.security.server.service.LoginService;
 import nl.knaw.huygens.security.server.service.SessionService;
@@ -46,7 +46,7 @@ public class ClientServerIT extends GuiceJerseyTestBase {
 
     //    @Test
     public void testSomething() {
-        HuygensAuthorizationHandler handler = new HuygensAuthorizationHandler(client, "http://www.example.com",
+        HuygensAuthenticationHandler handler = new HuygensAuthenticationHandler(client, "http://www.example.com",
                 "Huygens auth");
         try {
             handler.getSecurityInformation("some session");

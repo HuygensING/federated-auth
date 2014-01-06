@@ -12,7 +12,7 @@ import nl.knaw.huygens.security.core.model.Affiliation;
  * @author martijnm
  *
  */
-public class MockAuthorizationHandler implements AuthorizationHandler {
+public class MockAuthenticationHandler implements AuthenticationHandler {
 
   @Override
   public SecurityInformation getSecurityInformation(String sessionId) throws UnauthorizedException {

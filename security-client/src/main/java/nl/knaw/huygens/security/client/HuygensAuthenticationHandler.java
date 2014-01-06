@@ -17,15 +17,15 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
 
-public class HuygensAuthorizationHandler implements AuthorizationHandler {
+public class HuygensAuthenticationHandler implements AuthenticationHandler {
 
-  private Logger LOG = LoggerFactory.getLogger(HuygensAuthorizationHandler.class);
+  private Logger LOG = LoggerFactory.getLogger(HuygensAuthenticationHandler.class);
 
   private final Client client;
   private final String authorizationUrl;
   private final String basicCredentials;
 
-  public HuygensAuthorizationHandler(Client client, String authorizationUrl, String basicCredentials) {
+  public HuygensAuthenticationHandler(Client client, String authorizationUrl, String basicCredentials) {
     this.client = checkNotNull(client);
     this.basicCredentials = checkNotNull(basicCredentials);
     if (StringUtils.isBlank(authorizationUrl)) {
