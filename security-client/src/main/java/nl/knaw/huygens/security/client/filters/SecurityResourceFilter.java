@@ -29,11 +29,11 @@ import com.sun.jersey.spi.container.ResourceFilter;
 public final class SecurityResourceFilter implements ResourceFilter, ContainerRequestFilter {
   private static final Logger LOG = LoggerFactory.getLogger(SecurityResourceFilter.class);
   protected final SecurityContextCreator securityContextCreator;
-  protected final AuthenticationHandler authorizationHandler;
+  protected final AuthenticationHandler authenticationHandler;
 
   protected SecurityResourceFilter(SecurityContextCreator securityContextCreator, AuthenticationHandler authorizationHandler) {
     this.securityContextCreator = securityContextCreator;
-    this.authorizationHandler = authorizationHandler;
+    this.authenticationHandler = authorizationHandler;
   }
 
   @Override
@@ -62,7 +62,7 @@ public final class SecurityResourceFilter implements ResourceFilter, ContainerRe
     LOG.info("token: {} length: {}", token, StringUtils.length(token));
 
     try {
-      securityInformation = authorizationHandler.getSecurityInformation(token);
+      securityInformation = authenticationHandler.getSecurityInformation(token);
     } catch (UnauthorizedException e) {
       throw new WebApplicationException(Status.UNAUTHORIZED);
     }

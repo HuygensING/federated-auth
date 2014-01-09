@@ -8,18 +8,18 @@ import nl.knaw.huygens.security.client.SecurityContextCreator;
 
 public class SecurityResourceFilterFactory extends AbstractRolesAllowedResourceFilterFactory {
   private final SecurityContextCreator securityContextCreator;
-  private final AuthenticationHandler authorizationHandler;
+  private final AuthenticationHandler authenticationHandler;
 
   @Inject
   public SecurityResourceFilterFactory(SecurityContextCreator securityContextCreator, AuthenticationHandler authorizationHandler) {
     this.securityContextCreator = securityContextCreator;
-    this.authorizationHandler = authorizationHandler;
+    this.authenticationHandler = authorizationHandler;
   }
 
   @Override
   protected ResourceFilter createResourceFilter(AbstractMethod am) {
 
-    return new SecurityResourceFilter(securityContextCreator, authorizationHandler);
+    return new SecurityResourceFilter(securityContextCreator, authenticationHandler);
   }
 
   @Override
