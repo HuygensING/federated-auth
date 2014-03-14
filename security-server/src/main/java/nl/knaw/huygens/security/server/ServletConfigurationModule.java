@@ -40,12 +40,8 @@ import com.sun.jersey.api.container.filter.RolesAllowedResourceFilterFactory;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import nl.knaw.huygens.security.server.filters.CharsetResponseFilter;
 import nl.knaw.huygens.security.server.util.ClassNameIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ServletConfigurationModule extends ServletModule {
-    private static final Logger log = LoggerFactory.getLogger(ServletConfigurationModule.class);
-
     private static final Joiner COMMA_JOINER = Joiner.on(',');
 
     private static String getClassNames(Class<?>... classes) {

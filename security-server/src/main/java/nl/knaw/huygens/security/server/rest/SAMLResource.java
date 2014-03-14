@@ -108,7 +108,7 @@ public class SAMLResource {
 
     public static final String HUYGENS_SECURITY_URL = "https://secure.huygens.knaw.nl";
 
-    private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
+    private static final String SAML_SUCCESS = "urn:oasis:names:tc:SAML:2.0:status:Success";
 
     private static final String RES_SURFCONEXT_CERT = "/certificates/surfconext.cert";
 
@@ -126,7 +126,7 @@ public class SAMLResource {
 
     private static final String QUERY_PARAM_SAML_RESPONSE = "SAMLResponse";
 
-    private static final String SAML_SUCCESS = "urn:oasis:names:tc:SAML:2.0:status:Success";
+    private static final Logger log = LoggerFactory.getLogger(SAMLResource.class);
 
     private final SessionService sessionService;
 

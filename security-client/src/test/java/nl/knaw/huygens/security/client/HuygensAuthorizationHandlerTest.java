@@ -64,12 +64,12 @@ public class HuygensAuthorizationHandlerTest {
   private static final String CREDENTIALS = "Huygens 9aweh80opgf";
   private static final UUID TEST_SESSION_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
   private Client client;
-  private HuygensAuthenticationHandler instance;
+  private HuygensAuthorizationHandler instance;
 
   @Before
   public void setUp() {
     client = mock(Client.class);
-    instance = new HuygensAuthenticationHandler(client, AUTHORIZATION_URL, CREDENTIALS);
+    instance = new HuygensAuthorizationHandler(client, AUTHORIZATION_URL, CREDENTIALS);
   }
 
   @After

@@ -62,10 +62,10 @@ public abstract class AbstractSecurityAnnotationResourceFilterFactory implements
     }
 
     if (!securityEnabled) {
-      return Collections.singletonList(createNoSecurityResourceFilter());
+      return Collections.<ResourceFilter> singletonList(createNoSecurityResourceFilter());
     }
 
-    return Collections.singletonList(createResourceFilter(am));
+    return Collections.<ResourceFilter> singletonList(createResourceFilter(am));
   }
 
 }
