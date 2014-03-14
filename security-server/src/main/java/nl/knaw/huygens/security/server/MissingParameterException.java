@@ -23,6 +23,8 @@ package nl.knaw.huygens.security.server;
  */
 
 public class MissingParameterException extends BadRequestException {
+    private static final long serialVersionUID = -3475219705998720897L;
+
     public MissingParameterException(String parameterName) {
         super("Missing parameter '" + parameterName + "'");
     }
