@@ -43,7 +43,7 @@ demonstrates a sample service, which shows information about the authenticated
 user as obtained through SAML negotiation from the Identity Provider (IdP) which
 was used to authenticate.
 
-The service can be test by anyone with an account at any of the institutes
+This testservice can be used by anyone with an account at any of the institutes
 connected via SURFconext. After loading, the page will redirect via SURF IdP to
 the IdP of any selected institute. Upon providing valid credentials to this IdP,
 the user's browser will be redirected to the test page, to present the data
