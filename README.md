@@ -28,9 +28,9 @@ SAML response from the selected IdP.
 
 * IdP proceeds to authenticate user, provides signed `SAMLResponse` parameter
   and redirects User Agent back to "Authentication Consumer Service" part of
-  Huygens federated auth service
+  Huygens federated auth service:
   `https://secure.huygens.knaw.nl/acs [POST]`
-  parameters: `RelayState` and signed `SAMLResponse`
+  with parameters: `RelayState` and signed `SAMLResponse`
 
 * Huygens federated auth service verifies SAMLReponse signature against IdP
   public key and sets up local session for Huygens service. User agent is
