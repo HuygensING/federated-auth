@@ -207,8 +207,7 @@ public class SAMLResourceTest extends ResourceTestCase {
 
         //when
         Response response = sut.purgeExpiredLoginRequests();
-        @SuppressWarnings("unchecked") Collection<LoginRequest> purged;
-		purged = (Collection<LoginRequest>) response.getEntity();
+        @SuppressWarnings("unchecked") Collection<LoginRequest> purged = (Collection<LoginRequest>) response.getEntity();
 
         //then
         assertThat(purged, hasSize(1));
