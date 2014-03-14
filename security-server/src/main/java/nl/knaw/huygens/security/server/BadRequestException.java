@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BadRequestException extends WebApplicationException {
+    private static final long serialVersionUID = 7363652168801227307L;
     private static final Logger log = LoggerFactory.getLogger(BadRequestException.class);
 
     public BadRequestException(String message) {

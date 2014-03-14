@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ResourceGoneException extends WebApplicationException {
+    private static final long serialVersionUID = 4416245543633958554L;
     private static final Logger log = LoggerFactory.getLogger(ResourceGoneException.class);
 
     public ResourceGoneException(String message) {
