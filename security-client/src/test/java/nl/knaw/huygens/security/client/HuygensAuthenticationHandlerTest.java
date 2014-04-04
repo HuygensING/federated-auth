@@ -48,8 +48,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class HuygensAuthorizationHandlerTest {
-    private static final String AUTHORIZATION_URL = "http://localhost:9000";
+public class HuygensAuthenticationHandlerTest {
+    private static final String AUTHENTICATION_URL = "http://localhost:9000";
     private static final String DEFAULT_SESSION_ID = "test";
     private static final String PERSISTENT_ID = "111111333";
     private static final String ORGANISATION = "Doe inc.";
@@ -61,12 +61,12 @@ public class HuygensAuthorizationHandlerTest {
     private static final String CREDENTIALS = "Huygens 9aweh80opgf";
     private static final UUID TEST_SESSION_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private Client client;
-    private HuygensAuthorizationHandler instance;
+    private HuygensAuthenticationHandler instance;
 
     @Before
     public void setUp() {
         client = mock(Client.class);
-        instance = new HuygensAuthorizationHandler(client, AUTHORIZATION_URL, CREDENTIALS);
+        instance = new HuygensAuthenticationHandler(client, AUTHENTICATION_URL, CREDENTIALS);
     }
 
     @After
@@ -211,7 +211,7 @@ public class HuygensAuthorizationHandlerTest {
         when(resource.path(TEST_SESSION_ID.toString())).thenReturn(resource);
         when(resource.header(HttpHeaders.AUTHORIZATION, CREDENTIALS)).thenReturn(builder);
 
-        when(client.resource(AUTHORIZATION_URL)).thenReturn(resource);
+        when(client.resource(AUTHENTICATION_URL)).thenReturn(resource);
 
         return resource;
 

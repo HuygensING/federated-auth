@@ -26,14 +26,13 @@ import javax.annotation.security.RolesAllowed;
 
 import com.sun.jersey.api.model.AbstractMethod;
 import com.sun.jersey.spi.container.ResourceFilter;
-import com.sun.jersey.spi.container.ResourceFilterFactory;
 
 /**
  * Base class for RolesAllowedFilterFactories like SecurityFilterFactory. 
  * @author martijnm
  *
  */
-public abstract class AbstractRolesAllowedResourceFilterFactory extends AbstractSecurityAnnotationResourceFilterFactory implements ResourceFilterFactory {
+public abstract class AbstractRolesAllowedResourceFilterFactory extends AbstractSecurityAnnotationResourceFilterFactory {
 
   public AbstractRolesAllowedResourceFilterFactory() {
     super();
