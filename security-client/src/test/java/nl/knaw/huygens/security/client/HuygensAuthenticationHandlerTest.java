@@ -32,6 +32,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.StatusType;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -74,6 +76,24 @@ public class HuygensAuthenticationHandlerTest {
         client = null;
         instance = null;
     }
+
+    @Test
+    public void testClientResponseStatusDeprecatedEnumBecameInterface() throws UnauthorizedException {
+        /* In Jersey 1.17.1 there is a single Status, it being in ClientResponse.java
+         * In Jersey 1.18 a second Status was introduced in Response.java
+         * Consequently equality tests using '==' on StatusType instances goes haywire.
+         */
+        ClientResponse response = createClientResponse(Response.Status.OK);
+        when(response.getEntity(ClientSession.class)).thenReturn(createSecuritySession());
+        Builder builder = setupGETResponse(response);
+        setUpClient(builder);
+
+        SecurityInformation expected = createSecurityInformation();
+
+        SecurityInformation actual = instance.getSecurityInformation(DEFAULT_SESSION_ID);
+        assertEquals(expected, actual);
+    }
+
 
     @Test
     public void testGetSecurityInformationExistingUser() throws UnauthorizedException {
@@ -197,9 +217,9 @@ public class HuygensAuthenticationHandlerTest {
         return builder;
     }
 
-    private ClientResponse createClientResponse(Status status) {
+    private ClientResponse createClientResponse(StatusType statusType) {
         ClientResponse response = mock(ClientResponse.class);
-        when(response.getStatusInfo()).thenReturn(status);
+        when(response.getStatusInfo()).thenReturn(statusType);
         return response;
     }
 

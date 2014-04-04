@@ -93,18 +93,18 @@ public class HuygensAuthenticationHandler implements AuthenticationHandler {
         ClientResponse response = builder.get(ClientResponse.class);
 
         StatusType statusType = response.getStatusInfo();
-        if (statusType == OK) {
+        if (isEqual(statusType, OK)) {
             // expected.
         }
-        else if (statusType == NOT_FOUND) {
+        else if (isEqual(statusType, NOT_FOUND)) {
             LOG.info("Session token {} is unknown.", sessionToken);
             throw new UnauthorizedException();
         }
-        else if (statusType == GONE) {
+        else if (isEqual(statusType, GONE)) {
             LOG.info("Session of token {} is expired.", sessionToken);
             throw new UnauthorizedException();
         }
-        else if (statusType == BAD_REQUEST) {
+        else if (isEqual(statusType, BAD_REQUEST)) {
             LOG.error("Illegal session token {}.", sessionToken);
             throw new UnauthorizedException();
         }
@@ -116,8 +116,11 @@ public class HuygensAuthenticationHandler implements AuthenticationHandler {
 
         LOG.info("clientResponse: " + response);
 
-        HuygensSession session = response.getEntity(ClientSession.class);
-        return session;
+        return response.getEntity(ClientSession.class);
+    }
+
+    private boolean isEqual(StatusType s1, StatusType s2) {
+        return s1.getStatusCode() == s2.getStatusCode();
     }
 
     private Builder createSessionResourceBuilder(String sessionToken) {
@@ -142,17 +145,18 @@ public class HuygensAuthenticationHandler implements AuthenticationHandler {
         ClientResponse response = builder.delete(ClientResponse.class);
 
         StatusType statusType = response.getStatusInfo();
-        if (statusType == OK || statusType == NOT_FOUND || statusType == GONE) {
+        if (isEqual(statusType, OK) || isEqual(statusType, NOT_FOUND) || isEqual(statusType, GONE)) {
             return true;
         }
-        else if (statusType == BAD_REQUEST) {
+
+        if (isEqual(statusType, BAD_REQUEST)) {
             throw new IllegalArgumentException("Illegal session token: " + sessionToken);
         }
-        else if (statusType == FORBIDDEN) {
+
+        if (isEqual(statusType, FORBIDDEN)) {
             throw new UnauthorizedException("Session token: " + sessionToken);
         }
-        else {
-            return false;
-        }
+
+        return false;
     }
 }
