@@ -32,6 +32,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.StatusType;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -48,8 +50,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class HuygensAuthorizationHandlerTest {
-    private static final String AUTHORIZATION_URL = "http://localhost:9000";
+public class HuygensAuthenticationHandlerTest {
+    private static final String AUTHENTICATION_URL = "http://localhost:9000";
     private static final String DEFAULT_SESSION_ID = "test";
     private static final String PERSISTENT_ID = "111111333";
     private static final String ORGANISATION = "Doe inc.";
@@ -61,12 +63,12 @@ public class HuygensAuthorizationHandlerTest {
     private static final String CREDENTIALS = "Huygens 9aweh80opgf";
     private static final UUID TEST_SESSION_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private Client client;
-    private HuygensAuthorizationHandler instance;
+    private HuygensAuthenticationHandler instance;
 
     @Before
     public void setUp() {
         client = mock(Client.class);
-        instance = new HuygensAuthorizationHandler(client, AUTHORIZATION_URL, CREDENTIALS);
+        instance = new HuygensAuthenticationHandler(client, AUTHENTICATION_URL, CREDENTIALS);
     }
 
     @After
@@ -74,6 +76,24 @@ public class HuygensAuthorizationHandlerTest {
         client = null;
         instance = null;
     }
+
+    @Test
+    public void testClientResponseStatusDeprecatedEnumBecameInterface() throws UnauthorizedException {
+        /* In Jersey 1.17.1 there is a single Status, it being in ClientResponse.java
+         * In Jersey 1.18 a second Status was introduced in Response.java
+         * Consequently equality tests using '==' on StatusType instances goes haywire.
+         */
+        ClientResponse response = createClientResponse(Response.Status.OK);
+        when(response.getEntity(ClientSession.class)).thenReturn(createSecuritySession());
+        Builder builder = setupGETResponse(response);
+        setUpClient(builder);
+
+        SecurityInformation expected = createSecurityInformation();
+
+        SecurityInformation actual = instance.getSecurityInformation(DEFAULT_SESSION_ID);
+        assertEquals(expected, actual);
+    }
+
 
     @Test
     public void testGetSecurityInformationExistingUser() throws UnauthorizedException {
@@ -197,9 +217,9 @@ public class HuygensAuthorizationHandlerTest {
         return builder;
     }
 
-    private ClientResponse createClientResponse(Status status) {
+    private ClientResponse createClientResponse(StatusType statusType) {
         ClientResponse response = mock(ClientResponse.class);
-        when(response.getStatusInfo()).thenReturn(status);
+        when(response.getStatusInfo()).thenReturn(statusType);
         return response;
     }
 
@@ -211,7 +231,7 @@ public class HuygensAuthorizationHandlerTest {
         when(resource.path(TEST_SESSION_ID.toString())).thenReturn(resource);
         when(resource.header(HttpHeaders.AUTHORIZATION, CREDENTIALS)).thenReturn(builder);
 
-        when(client.resource(AUTHORIZATION_URL)).thenReturn(resource);
+        when(client.resource(AUTHENTICATION_URL)).thenReturn(resource);
 
         return resource;
 

@@ -27,7 +27,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.SecurityContext;
 
-import nl.knaw.huygens.security.client.AuthorizationHandler;
+import nl.knaw.huygens.security.client.AuthenticationHandler;
 import nl.knaw.huygens.security.client.SecurityContextCreator;
 import nl.knaw.huygens.security.client.UnauthorizedException;
 import nl.knaw.huygens.security.client.model.SecurityInformation;
@@ -51,11 +51,11 @@ import com.sun.jersey.spi.container.ResourceFilter;
 public final class SecurityResourceFilter implements ResourceFilter, ContainerRequestFilter {
   private static final Logger LOG = LoggerFactory.getLogger(SecurityResourceFilter.class);
   protected final SecurityContextCreator securityContextCreator;
-  protected final AuthorizationHandler authorizationHandler;
+  protected final AuthenticationHandler authenticationHandler;
 
-  protected SecurityResourceFilter(SecurityContextCreator securityContextCreator, AuthorizationHandler authorizationHandler) {
+  protected SecurityResourceFilter(SecurityContextCreator securityContextCreator, AuthenticationHandler authenticationHandler) {
     this.securityContextCreator = securityContextCreator;
-    this.authorizationHandler = authorizationHandler;
+    this.authenticationHandler = authenticationHandler;
   }
 
   @Override
@@ -84,7 +84,7 @@ public final class SecurityResourceFilter implements ResourceFilter, ContainerRe
     LOG.info("token: {} length: {}", token, StringUtils.length(token));
 
     try {
-      securityInformation = authorizationHandler.getSecurityInformation(token);
+      securityInformation = authenticationHandler.getSecurityInformation(token);
     } catch (UnauthorizedException e) {
       throw new WebApplicationException(Status.UNAUTHORIZED);
     }
