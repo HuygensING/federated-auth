@@ -104,7 +104,13 @@ import org.xml.sax.SAXException;
 
 @Path("/saml2") // Part of the SURFconext contract -- Thou shalt not change this path!
 public class SAMLResource {
-    public static final String SURF_IDP_SSO_URL = "https://engine.surfconext.nl/authentication/idp/single-sign-on";
+    public static final String SURF_IDP_SSO_URL_PRE_HEARTBLEED //
+            = "https://engine.surfconext.nl/authentication/idp/single-sign-on";
+
+    public static final String SURF_IDP_SSO_URL_POST_HEARTBLEED //
+            = "https://engine.surfconext.nl/authentication/idp/single-sign-on/key:20140505";
+
+    public static final String SURF_IDP_SSO_URL = SURF_IDP_SSO_URL_POST_HEARTBLEED;
 
     public static final String HUYGENS_SECURITY_URL = "https://secure.huygens.knaw.nl";
 
@@ -153,7 +159,7 @@ public class SAMLResource {
         final String request = samlEncoder.deflateAndBase64Encode(buildAuthnRequestObject());
         log.debug("SAML request: [{}]", request);
 
-        UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL);
+        UriBuilder uriBuilder = UriBuilder.fromPath(SURF_IDP_SSO_URL_POST_HEARTBLEED);
         uriBuilder.queryParam(QUERY_PARAM_RELAY_STATE, relayState);
         uriBuilder.queryParam(QUERY_PARAM_SAML_REQUEST, request);
 
