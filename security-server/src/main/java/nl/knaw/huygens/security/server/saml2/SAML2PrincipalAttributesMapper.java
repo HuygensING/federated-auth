@@ -146,8 +146,7 @@ public class SAML2PrincipalAttributesMapper {
 
   private void mapAffiliation(Attribute attribute) {
     for (XMLObject value : attribute.getAttributeValues()) {
-      value.getSchemaType();
-      final String affiliation = ((XSString) value).getValue();
+      final String affiliation = getValueAsString(value);
       huygensPrincipal.addAffiliation(affiliation);
     }
   }
@@ -185,14 +184,19 @@ public class SAML2PrincipalAttributesMapper {
   private String getFirstAttributeValueString(Attribute attribute) {
     XMLObject xmlObj = getFirstAttributeValue(attribute);
 
+    String value = getValueAsString(xmlObj);
+
+    log.trace("first attribute value for [{}] is [{}]", attribute.getName(), value);
+    return value;
+  }
+
+  private String getValueAsString(XMLObject xmlObj) {
     String value = null;
     if (xmlObj instanceof XSString) {
       value = ((XSString) xmlObj).getValue();
     } else if (xmlObj instanceof XSAny) {
       value = ((XSAny) xmlObj).getTextContent();
     }
-
-    log.trace("first attribute value for [{}] is [{}]", attribute.getName(), value);
     return value;
   }
 

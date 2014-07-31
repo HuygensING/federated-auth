@@ -63,7 +63,6 @@ import nl.knaw.huygens.security.server.service.LoginService;
 import nl.knaw.huygens.security.server.service.SessionService;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -187,7 +186,6 @@ public class SAMLResourceTest extends ResourceTestCase {
     sut.consumeAssertion(testSAMLRequest, testRelayState.toString());
   }
 
-  @Ignore("Find a more permanent solution to parse the saml and it's properties.")
   @Test
   public void testConsumeAssertion() throws Exception {
     //given
