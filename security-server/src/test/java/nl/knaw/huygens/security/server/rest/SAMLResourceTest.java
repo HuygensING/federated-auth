@@ -71,225 +71,243 @@ import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
 
 public class SAMLResourceTest extends ResourceTestCase {
-    private final URI testURI = URI.create("www.example.com");
+  private final URI testURI = URI.create("www.example.com");
 
-    private final UUID testRelayState = UUID.fromString("12345678-abcd-1234-abcd-1234567890ab");
+  private final UUID testRelayState = UUID.fromString("12345678-abcd-1234-abcd-1234567890ab");
 
-    private final String testSAMLRequest = "%3Csaml%20request%3E";
+  private final String testSAMLRequest = "%3Csaml%20request%3E";
 
-    private final LoginRequest testLoginRequest = new LoginRequest(testURI);
+  private final LoginRequest testLoginRequest = new LoginRequest(testURI);
 
-    @Mock
-    private LoginService loginService;
+  @Mock
+  private LoginService loginService;
 
-    @Mock
-    private SAMLEncoder samlEncoder;
+  @Mock
+  private SAMLEncoder samlEncoder;
 
-    @Mock
-    private SessionService sessionService;
+  @Mock
+  private SessionService sessionService;
 
-    @InjectMocks
-    private SAMLResource sut;
+  @InjectMocks
+  private SAMLResource sut;
 
-    @BeforeClass
-    public static void bootstrapDependencies() throws Exception {
-        DefaultBootstrap.bootstrap(); // expensive, only needed once for the entire test suite
-    }
+  @BeforeClass
+  public static void bootstrapDependencies() throws Exception {
+    DefaultBootstrap.bootstrap(); // expensive, only needed once for the entire test suite
+  }
 
-    @Override
-    public Object getSUT() {
-        return sut;
-    }
+  @Override
+  public Object getSUT() {
+    return sut;
+  }
 
-    @Test
-    public void testLoginMustRedirect() throws Exception {
-        given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
-        given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
+  @Test
+  public void testLoginMustRedirect() throws Exception {
+    given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
+    given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
 
-        //when
-        final Response response = sut.requestLogin(testURI);
+    //when
+    final Response response = sut.requestLogin(testURI);
 
-        //then
-        assertThat(response.getStatus(), is(303));
-    }
+    //then
+    assertThat(response.getStatus(), is(303));
+  }
 
-    @Test
-    public void testLoginRedirectLocationSAML2Compliance() throws Exception {
-        given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
-        given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
+  @Test
+  public void testLoginRedirectLocationSAML2Compliance() throws Exception {
+    given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
+    given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
 
-        //when
-        final Response response = sut.requestLogin(testURI);
+    //when
+    final Response response = sut.requestLogin(testURI);
 
-        //then
-        final URI locationURI = (URI) response.getMetadata().getFirst("Location");
-        assertThat(locationURI.getScheme(), is("https"));  // transport must be secure
-        final String location = locationURI.toString();
-        assertThat(location, startsWith(SURF_IDP_SSO_URL));
-        assertThat(location, containsString("RelayState=" + testRelayState));
-        assertThat(location, containsString("SAMLRequest=" + testSAMLRequest));
-    }
+    //then
+    final URI locationURI = (URI) response.getMetadata().getFirst("Location");
+    assertThat(locationURI.getScheme(), is("https")); // transport must be secure
+    final String location = locationURI.toString();
+    assertThat(location, startsWith(SURF_IDP_SSO_URL));
+    assertThat(location, containsString("RelayState=" + testRelayState));
+    assertThat(location, containsString("SAMLRequest=" + testSAMLRequest));
+  }
 
-    @Test
-    public void testLoginCachingHeadersSAML2Compliance() throws Exception {
-        given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
-        given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
+  @Test
+  public void testLoginCachingHeadersSAML2Compliance() throws Exception {
+    given(samlEncoder.deflateAndBase64Encode(any(SAMLObject.class))).willReturn(testSAMLRequest);
+    given(loginService.createLoginRequest(testURI)).willReturn(testRelayState);
 
-        //when
-        final Response response = sut.requestLogin(testURI);
+    //when
+    final Response response = sut.requestLogin(testURI);
 
-        //then
-        final List<Object> cacheControl = response.getMetadata().get("Cache-Control");
-        final List<Object> pragma = response.getMetadata().get("pragma");
-        /* 3.4.5.1, HTTP and Caching Considerations:
-         * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
-         * To ensure this, the following rules SHOULD be followed.
-         * When returning SAML protocol messages using HTTP 1.1, HTTP responders SHOULD:
-         * Include a Cache-Control header field set to "no-cache, no-store".
-         * Include a Pragma header field set to "no-cache".
-         */
-        assertTrue(cacheControl.contains("no-cache"));
-        assertTrue(cacheControl.contains("no-store"));
-        assertTrue(pragma.contains("no-cache"));
-    }
+    //then
+    final List<Object> cacheControl = response.getMetadata().get("Cache-Control");
+    final List<Object> pragma = response.getMetadata().get("pragma");
+    /* 3.4.5.1, HTTP and Caching Considerations:
+     * HTTP proxies and the user agent intermediary should not cache SAML protocol messages.
+     * To ensure this, the following rules SHOULD be followed.
+     * When returning SAML protocol messages using HTTP 1.1, HTTP responders SHOULD:
+     * Include a Cache-Control header field set to "no-cache, no-store".
+     * Include a Pragma header field set to "no-cache".
+     */
+    assertTrue(cacheControl.contains("no-cache"));
+    assertTrue(cacheControl.contains("no-store"));
+    assertTrue(pragma.contains("no-cache"));
+  }
 
-    @Test(expected = BadRequestException.class)
-    public void testACSNoSAMLResponseParam() throws Exception {
-        sut.consumeAssertion(null, testRelayState.toString());
-    }
+  @Test(expected = BadRequestException.class)
+  public void testACSNoSAMLResponseParam() throws Exception {
+    sut.consumeAssertion(null, testRelayState.toString());
+  }
 
-    @Test(expected = BadRequestException.class)
-    public void testACSEmptySAMLResponseParam() throws Exception {
-        sut.consumeAssertion("", testRelayState.toString());
-    }
+  @Test(expected = BadRequestException.class)
+  public void testACSEmptySAMLResponseParam() throws Exception {
+    sut.consumeAssertion("", testRelayState.toString());
+  }
 
-    @Test(expected = BadRequestException.class)
-    public void testACSNoRelayStateParam() throws Exception {
-        sut.consumeAssertion(testSAMLRequest, null);
-    }
+  @Test(expected = BadRequestException.class)
+  public void testACSNoRelayStateParam() throws Exception {
+    sut.consumeAssertion(testSAMLRequest, null);
+  }
 
-    @Test(expected = BadRequestException.class)
-    public void testACSEmptyRelayStateParam() throws Exception {
-        sut.consumeAssertion(testSAMLRequest, "");
-    }
+  @Test(expected = BadRequestException.class)
+  public void testACSEmptyRelayStateParam() throws Exception {
+    sut.consumeAssertion(testSAMLRequest, "");
+  }
 
-    @Test(expected = BadRequestException.class)
-    public void testACSIllegalRelayStateParam() throws Exception {
-        sut.consumeAssertion(testSAMLRequest, "illegal-relaystate");
-    }
+  @Test(expected = BadRequestException.class)
+  public void testACSIllegalRelayStateParam() throws Exception {
+    sut.consumeAssertion(testSAMLRequest, "illegal-relaystate");
+  }
 
-    @Test(expected = NotFoundException.class)
-    public void testACSInvalidRelayStateParam() throws Exception {
-        sut.consumeAssertion(testSAMLRequest, testRelayState.toString());
-    }
+  @Test(expected = NotFoundException.class)
+  public void testACSInvalidRelayStateParam() throws Exception {
+    sut.consumeAssertion(testSAMLRequest, testRelayState.toString());
+  }
 
-    @Test
-    public void testConsumeAssertion() throws Exception {
-        //given
-        final UUID relayState = testLoginRequest.getRelayState();
-        given(loginService.removeLoginRequest(relayState)).willReturn(testLoginRequest);
+  @Test
+  public void testConsumeAssertion() throws Exception {
+    //given
+    final UUID relayState = testLoginRequest.getRelayState();
+    given(loginService.removeLoginRequest(relayState)).willReturn(testLoginRequest);
 
-        //when
-        final Response response = sut.consumeAssertion(getSAMLResponse(), relayState.toString());
+    //when
+    final Response response = sut.consumeAssertion(getSAMLResponse("/saml-response.txt"), relayState.toString());
 
-        //then
-        assertEquals(303, response.getStatus());
-        final URI locationURI = (URI) response.getMetadata().getFirst("Location");
-        final String location = locationURI.toString();
-        assertThat(location, startsWith(testLoginRequest.getRedirectURI().toString()));
-        assertThat(location, containsString(API.SESSION_ID_HTTP_PARAM + '='));
-    }
+    //then
+    assertEquals(303, response.getStatus());
+    final URI locationURI = (URI) response.getMetadata().getFirst("Location");
+    final String location = locationURI.toString();
+    assertThat(location, startsWith(testLoginRequest.getRedirectURI().toString()));
+    assertThat(location, containsString(API.SESSION_ID_HTTP_PARAM + '='));
+  }
 
-    @Test
-    public void testPurgeExpiredLoginRequests() throws Exception {
-        //given
-        given(loginService.purgeExpiredRequests()).willReturn(Lists.newArrayList(testLoginRequest));
+  @Test
+  public void testConsumeAssertionNewFile() throws Exception {
+    //given
+    final UUID relayState = testLoginRequest.getRelayState();
+    given(loginService.removeLoginRequest(relayState)).willReturn(testLoginRequest);
 
-        //when
-        Response response = sut.purgeExpiredLoginRequests();
-        @SuppressWarnings("unchecked") Collection<LoginRequest> purged = (Collection<LoginRequest>) response.getEntity();
+    //when
+    final Response response = sut.consumeAssertion(getSAMLResponse("/new-saml-response.txt"), relayState.toString());
 
-        //then
-        assertThat(purged, hasSize(1));
-        assertThat(purged, contains(testLoginRequest));
-    }
+    //then
+    assertEquals(303, response.getStatus());
+    final URI locationURI = (URI) response.getMetadata().getFirst("Location");
+    final String location = locationURI.toString();
+    assertThat(location, startsWith(testLoginRequest.getRedirectURI().toString()));
+    assertThat(location, containsString(API.SESSION_ID_HTTP_PARAM + '='));
+  }
 
-    @Test
-    public void testGetLoginRequests() throws Exception {
-        given(loginService.getPendingLoginRequests()).willReturn(Lists.newArrayList(testLoginRequest));
+  @Test
+  public void testPurgeExpiredLoginRequests() throws Exception {
+    //given
+    given(loginService.purgeExpiredRequests()).willReturn(Lists.newArrayList(testLoginRequest));
 
-        //when
-        final Collection<LoginRequest> loginRequests = sut.getLoginRequests();
+    //when
+    Response response = sut.purgeExpiredLoginRequests();
+    @SuppressWarnings("unchecked")
+    Collection<LoginRequest> purged = (Collection<LoginRequest>) response.getEntity();
 
-        //then
-        assertThat(loginRequests, hasSize(1));
-        assertThat(loginRequests, contains(testLoginRequest));
-    }
+    //then
+    assertThat(purged, hasSize(1));
+    assertThat(purged, contains(testLoginRequest));
+  }
 
-    @Test(expected = BadRequestException.class)
-    public void testRemoveLoginRequestForIllegalUUID() throws Exception {
-        sut.removeLoginRequest("illegal-uuid");
-    }
+  @Test
+  public void testGetLoginRequests() throws Exception {
+    given(loginService.getPendingLoginRequests()).willReturn(Lists.newArrayList(testLoginRequest));
 
-    @Test(expected = NotFoundException.class)
-    public void testRemoveLoginRequestForInvalidUUID() throws Exception {
-        sut.removeLoginRequest("11111111-1111-1111-1111-111111111111");
-    }
+    //when
+    final Collection<LoginRequest> loginRequests = sut.getLoginRequests();
 
-    @Test
-    public void testRemoveLoginRequestForValidUUID() throws Exception {
-        given(loginService.removeLoginRequest(testRelayState)).willReturn(testLoginRequest);
+    //then
+    assertThat(loginRequests, hasSize(1));
+    assertThat(loginRequests, contains(testLoginRequest));
+  }
 
-        //when
-        final Response response = sut.removeLoginRequest(testRelayState.toString());
+  @Test(expected = BadRequestException.class)
+  public void testRemoveLoginRequestForIllegalUUID() throws Exception {
+    sut.removeLoginRequest("illegal-uuid");
+  }
 
-        //then
-        assertThat(testLoginRequest, is(response.getEntity()));
-    }
+  @Test(expected = NotFoundException.class)
+  public void testRemoveLoginRequestForInvalidUUID() throws Exception {
+    sut.removeLoginRequest("11111111-1111-1111-1111-111111111111");
+  }
 
-    @Test
-    public void testRESTLoginRequest() throws Exception {
-        Method m = restHelper.findMethod("/saml2/login", POST.class);
+  @Test
+  public void testRemoveLoginRequestForValidUUID() throws Exception {
+    given(loginService.removeLoginRequest(testRelayState)).willReturn(testLoginRequest);
 
-        assertNull(m.getAnnotation(RolesAllowed.class));
-        assertThat(restHelper.getProducedMediaTypes(m), contains(TEXT_HTML));
-    }
+    //when
+    final Response response = sut.removeLoginRequest(testRelayState.toString());
 
-    @Test
-    public void testRESTAssertionConsumerService() throws Exception {
-        Method m = restHelper.findMethod("/saml2/acs", POST.class);
+    //then
+    assertThat(testLoginRequest, is(response.getEntity()));
+  }
 
-        assertNull(m.getAnnotation(RolesAllowed.class));
-        assertThat(restHelper.getProducedMediaTypes(), contains(TEXT_HTML));
-        assertThat(restHelper.getConsumedMediaTypes(), contains(APPLICATION_FORM_URLENCODED));
-    }
+  @Test
+  public void testRESTLoginRequest() throws Exception {
+    Method m = restHelper.findMethod("/saml2/login", POST.class);
 
-    @Test
-    public void testRESTRemoveLoginRequest() throws Exception {
-        restHelper.findMethod("/saml2/requests/<sessionId>", DELETE.class);
+    assertNull(m.getAnnotation(RolesAllowed.class));
+    assertThat(restHelper.getProducedMediaTypes(m), contains(TEXT_HTML));
+  }
 
-        final List<String> rolesAllowed = restHelper.getRolesAllowed();
-        assertThat(rolesAllowed, hasSize(1));
-        assertThat(rolesAllowed, contains(LOGIN_MANAGER));
+  @Test
+  public void testRESTAssertionConsumerService() throws Exception {
+    Method m = restHelper.findMethod("/saml2/acs", POST.class);
 
-        assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
-    }
+    assertNull(m.getAnnotation(RolesAllowed.class));
+    assertThat(restHelper.getProducedMediaTypes(), contains(TEXT_HTML));
+    assertThat(restHelper.getConsumedMediaTypes(), contains(APPLICATION_FORM_URLENCODED));
+  }
 
-    @Test
-    public void testRESTPurge() throws Exception {
-        restHelper.findMethod("/saml2/purge", POST.class);
+  @Test
+  public void testRESTRemoveLoginRequest() throws Exception {
+    restHelper.findMethod("/saml2/requests/<sessionId>", DELETE.class);
 
-        final List<String> rolesAllowed = restHelper.getRolesAllowed();
-        assertThat(rolesAllowed, hasSize(1));
-        assertThat(rolesAllowed, contains(LOGIN_MANAGER));
+    final List<String> rolesAllowed = restHelper.getRolesAllowed();
+    assertThat(rolesAllowed, hasSize(1));
+    assertThat(rolesAllowed, contains(LOGIN_MANAGER));
 
-        assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
-    }
+    assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
+  }
 
-    private String getSAMLResponse() throws IOException {
-        final URL url = getClass().getResource("/saml-response.txt");
-        final File file = new File(url.getFile());
-        String samlResponse = Files.toString(file, UTF_8);
-        return URLDecoder.decode(samlResponse, UTF_8.name());
-    }
+  @Test
+  public void testRESTPurge() throws Exception {
+    restHelper.findMethod("/saml2/purge", POST.class);
+
+    final List<String> rolesAllowed = restHelper.getRolesAllowed();
+    assertThat(rolesAllowed, hasSize(1));
+    assertThat(rolesAllowed, contains(LOGIN_MANAGER));
+
+    assertThat(restHelper.getProducedMediaTypes(), contains(APPLICATION_JSON));
+  }
+
+  private String getSAMLResponse(String fileName) throws IOException {
+    final URL url = getClass().getResource(fileName);
+    final File file = new File(url.getFile());
+    String samlResponse = Files.toString(file, UTF_8);
+    return URLDecoder.decode(samlResponse, UTF_8.name());
+  }
 }

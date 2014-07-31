@@ -157,111 +157,109 @@ public class SAML2PrincipalAttributesMapper {
         huygensPrincipal.setOrganization(organization);
     }
 
-    private void mapPersistentID(Attribute attribute) {
-        final XSAny xsAny = (XSAny) getFirstAttributeValue(attribute);
-        for (XMLObject child : xsAny.getUnknownXMLObjects()) {
-            NameID nameID = (NameID) child;
-            final String format = nameID.getFormat();
-            final String value = nameID.getValue();
-            if (!FORMAT_PERSISTENT.equals(format)) {
-                log.warn("Incorrect format {} for persistent id, expected: {}", format, FORMAT_PERSISTENT);
-            }
-            else {
-                huygensPrincipal.setPersistentID(value);
-            }
-        }
+  private void mapAffiliation(Attribute attribute) {
+    for (XMLObject value : attribute.getAttributeValues()) {
+      final String affiliation = getValueAsString(value);
+      huygensPrincipal.addAffiliation(affiliation);
+    }
+  }
+
+  private void mapOrganization(Attribute attribute) {
+    final String organization = getFirstAttributeValueString(attribute);
+    huygensPrincipal.setOrganization(organization);
+  }
+
+  private void mapPersistentID(Attribute attribute) {
+    final XSAny xsAny = (XSAny) getFirstAttributeValue(attribute);
+    for (XMLObject child : xsAny.getUnknownXMLObjects()) {
+      NameID nameID = (NameID) child;
+      final String format = nameID.getFormat();
+      final String value = nameID.getValue();
+      if (!FORMAT_PERSISTENT.equals(format)) {
+        log.warn("Incorrect format {} for persistent id, expected: {}", format, FORMAT_PERSISTENT);
+      } else {
+        huygensPrincipal.setPersistentID(value);
+      }
+    }
+  }
+
+  private XMLObject getFirstAttributeValue(Attribute attribute) {
+    final List<XMLObject> attributeValues = attribute.getAttributeValues();
+
+    if (attributeValues.isEmpty()) {
+      log.warn("Empty attribute values list for attribute: {}", attribute.getName());
+      return null;
     }
 
-    private XMLObject getFirstAttributeValue(Attribute attribute) {
-        final List<XMLObject> attributeValues = attribute.getAttributeValues();
+    return attributeValues.get(0);
+  }
 
-        if (attributeValues.isEmpty()) {
-            log.warn("Empty attribute values list for attribute: {}", attribute.getName());
-            return null;
-        }
+  private String getFirstAttributeValueString(Attribute attribute) {
+    XMLObject xmlObj = getFirstAttributeValue(attribute);
 
-        return attributeValues.get(0);
+    String value = getValueAsString(xmlObj);
+
+    log.trace("first attribute value for [{}] is [{}]", attribute.getName(), value);
+    return value;
+  }
+
+  private String getValueAsString(XMLObject xmlObj) {
+    String value = null;
+    if (xmlObj instanceof XSString) {
+      value = ((XSString) xmlObj).getValue();
+    } else if (xmlObj instanceof XSAny) {
+      value = ((XSAny) xmlObj).getTextContent();
     }
+    return value;
+  }
 
-    private String getFirstAttributeValueString(Attribute attribute) {
-        XMLObject xmlObj = getFirstAttributeValue(attribute);
-
-        String value = null;
-        if (xmlObj instanceof XSString) {
-            value = ((XSString) xmlObj).getValue();
-        }
-        else if (xmlObj instanceof XSAny) {
-            value = ((XSAny) xmlObj).getTextContent();
-        }
-
-        log.trace("first attribute value for [{}] is [{}]", attribute.getName(), value);
-        return value;
+  private void mapMACEAttribute(Attribute attribute) {
+    final String name = attribute.getName();
+    if (URN_MACE_CN.equals(name)) {
+      mapCommonName(attribute);
+    } else if (URN_MACE_DISPLAY_NAME.equals(name)) {
+      mapDisplayName(attribute);
+    } else if (URN_MACE_GIVEN_NAME.equals(name)) {
+      mapGivenName(attribute);
+    } else if (URN_MACE_SURNAME.equals(name)) {
+      mapSurname(attribute);
+    } else if (URN_MACE_EMAIL.equals(name)) {
+      mapEmailAddress(attribute);
+    } else if (URN_MACE_AFFILIATION.equals(name)) {
+      mapAffiliation(attribute);
+    } else if (URN_MACE_ORGANIZATION.equals(name)) {
+      mapOrganization(attribute);
+    } else if (URN_MACE_PERSISTENT_ID.equals(name)) {
+      mapPersistentID(attribute);
+    } else {
+      final String value = getFirstAttributeValueString(attribute);
+      log.trace("Unmapped urn:mace attribute: [{}] -> [{}]", name, value);
     }
+  }
 
-    private void mapMACEAttribute(Attribute attribute) {
-        final String name = attribute.getName();
-        if (URN_MACE_CN.equals(name)) {
-            mapCommonName(attribute);
-        }
-        else if (URN_MACE_DISPLAY_NAME.equals(name)) {
-            mapDisplayName(attribute);
-        }
-        else if (URN_MACE_GIVEN_NAME.equals(name)) {
-            mapGivenName(attribute);
-        }
-        else if (URN_MACE_SURNAME.equals(name)) {
-            mapSurname(attribute);
-        }
-        else if (URN_MACE_EMAIL.equals(name)) {
-            mapEmailAddress(attribute);
-        }
-        else if (URN_MACE_AFFILIATION.equals(name)) {
-            mapAffiliation(attribute);
-        }
-        else if (URN_MACE_ORGANIZATION.equals(name)) {
-            mapOrganization(attribute);
-        }
-        else if (URN_MACE_PERSISTENT_ID.equals(name)) {
-            mapPersistentID(attribute);
-        }
-        else {
-            final String value = getFirstAttributeValueString(attribute);
-            log.trace("Unmapped urn:mace attribute: [{}] -> [{}]", name, value);
-        }
+  private void mapOIDAttribute(Attribute attribute) {
+    final String name = attribute.getName();
+    if (URN_OID_CN.equals(name)) {
+      mapCommonName(attribute);
+    } else if (URN_OID_DISPLAY_NAME.equals(name)) {
+      mapDisplayName(attribute);
+    } else if (URN_OID_GIVEN_NAME.equals(name)) {
+      mapGivenName(attribute);
+    } else if (URN_OID_SURNAME.equals(name)) {
+      mapSurname(attribute);
+    } else if (URN_OID_EMAIL.equals(name)) {
+      mapEmailAddress(attribute);
+    } else if (URN_OID_AFFILIATION.equals(name)) {
+      mapAffiliation(attribute);
+    } else if (URN_OID_ORGANIZATION.equals(name)) {
+      mapOrganization(attribute);
+    } else if (URN_OID_PERSISTENT_ID.equals(name)) {
+      mapPersistentID(attribute);
+    } else if (URN_OID_LEGACY_ORGA.equals(name)) {
+      log.trace("Ignoring legacy home organization attribute");
+    } else {
+      final String value = getFirstAttributeValueString(attribute);
+      log.trace("Unmapped urn:oid attribute: [{}] -> [{}]", name, value);
     }
-
-    private void mapOIDAttribute(Attribute attribute) {
-        final String name = attribute.getName();
-        if (URN_OID_CN.equals(name)) {
-            mapCommonName(attribute);
-        }
-        else if (URN_OID_DISPLAY_NAME.equals(name)) {
-            mapDisplayName(attribute);
-        }
-        else if (URN_OID_GIVEN_NAME.equals(name)) {
-            mapGivenName(attribute);
-        }
-        else if (URN_OID_SURNAME.equals(name)) {
-            mapSurname(attribute);
-        }
-        else if (URN_OID_EMAIL.equals(name)) {
-            mapEmailAddress(attribute);
-        }
-        else if (URN_OID_AFFILIATION.equals(name)) {
-            mapAffiliation(attribute);
-        }
-        else if (URN_OID_ORGANIZATION.equals(name)) {
-            mapOrganization(attribute);
-        }
-        else if (URN_OID_PERSISTENT_ID.equals(name)) {
-            mapPersistentID(attribute);
-        }
-        else if (URN_OID_LEGACY_ORGA.equals(name)) {
-            log.trace("Ignoring legacy home organization attribute");
-        }
-        else {
-            final String value = getFirstAttributeValueString(attribute);
-            log.trace("Unmapped urn:oid attribute: [{}] -> [{}]", name, value);
-        }
-    }
+  }
 }
