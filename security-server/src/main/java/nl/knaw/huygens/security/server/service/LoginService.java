@@ -59,7 +59,7 @@ public class LoginService {
 
     public LoginService() {
         log.debug("LoginService created");
-        loginRequestsByRelayState = Maps.newHashMap();
+        loginRequestsByRelayState = Maps.newConcurrentMap();
         nextPurge = DateTime.now().plusMinutes(1);
     }
 
