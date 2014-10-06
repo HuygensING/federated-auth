@@ -145,18 +145,6 @@ public class SAML2PrincipalAttributesMapper {
         huygensPrincipal.setEmailAddress(emailAddress);
     }
 
-    private void mapAffiliation(Attribute attribute) {
-        for (XMLObject value : attribute.getAttributeValues()) {
-            final String affiliation = ((XSAny) value).getTextContent();
-            huygensPrincipal.addAffiliation(affiliation);
-        }
-    }
-
-    private void mapOrganization(Attribute attribute) {
-        final String organization = getFirstAttributeValueString(attribute);
-        huygensPrincipal.setOrganization(organization);
-    }
-
   private void mapAffiliation(Attribute attribute) {
     for (XMLObject value : attribute.getAttributeValues()) {
       final String affiliation = getValueAsString(value);
