@@ -48,7 +48,7 @@ public class SessionService {
 
     public SessionService() {
         log.debug("SessionService created");
-        sessions = Maps.newHashMap();
+        sessions = Maps.newConcurrentMap();
         nextPurge = DateTime.now().plusMinutes(1);
     }
 
